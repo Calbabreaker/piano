@@ -1,18 +1,17 @@
 {
-    "name": "frontend",
+    "name": "piano-frontend",
+    "author": "Calbabreaker",
+    "license": "GPL-3",
     "private": true,
     "scripts": {
-        "dev": "next dev",
-        "build": "next build",
-        "start": "next start"
-    },
-    "dependencies": {
-        "next": "10.2.0",
-        "react": "17.0.2",
-        "react-dom": "17.0.2"
+        "dev": "parcel src/index.html",
+        "build": "parcel build src/index.html"
     },
     "devDependencies": {
-        "@types/react": "^17.0.5",
-        "typescript": "^4.2.4"
+        "@parcel/transformer-sass": "2.0.0-beta.2",
+        "parcel": "^2.0.0-beta.2"
+    },
+    "dependencies": {
+        "soundfont-player": "^0.12.0"
     }
 }

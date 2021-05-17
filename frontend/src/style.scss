@@ -18,17 +18,17 @@ main {
     flex-direction: column;
 }
 
-#toolbox {
+.control-panel {
     background-color: black;
     color: white;
     padding: 10px;
+
+    input[type="range"] {
+        width: 8rem;
+    }
 }
 
-#toolbox input[type="range"] {
-    width: 8rem;
-}
-
-#piano {
+.piano {
     --white-keys: 0;
     display: flex;
     align-self: flex-end;
@@ -40,11 +40,11 @@ main {
     border-radius: 0px 0px 4px 4px;
     box-shadow: 0px 5px 1px rgba(32, 32, 32, 0.2);
     user-select: none;
-}
 
-.key:hover {
-    background-color: rgb(33, 192, 197);
-    border: rgb(20, 112, 116) solid 1px;
+    &:hover {
+        background-color: rgb(33, 192, 197);
+        border: rgb(20, 112, 116) solid 1px;
+    }
 }
 
 .white {
