@@ -5,7 +5,7 @@ import { MidiPlayer } from "./midi_player";
 
 export class ControlPanel {
     private _sustain = false;
-    private _volume = 2;
+    private _volume = 25;
     private _octaveShift = 0;
     private _instrumentName: Soundfont.InstrumentName = "acoustic_grand_piano";
 
@@ -96,7 +96,7 @@ export class ControlPanel {
         this.panel.appendChild(volumeControl);
 
         const volumeInput = htmlToElement(
-            `<input type="range" min="0" max="10" step="0.1" value="${this.volume}">`
+            `<input type="range" min="0" max="50" value="${this.volume}">`
         ) as HTMLInputElement;
         volumeInput.onchange = () => (this.volume = parseFloat(volumeInput.value));
         volumeControl.appendChild(volumeInput);

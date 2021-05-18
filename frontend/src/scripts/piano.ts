@@ -46,7 +46,7 @@ export class Piano {
         this.createDOM(startNote, endNote);
     }
 
-    playNote(note: string, includeShift = true): void {
+    playNote(note: string, includeShift = true, velocity = 1): void {
         if (this.activeNoteMap.has(note)) return;
 
         const octave = getOctave(note) + (includeShift ? this.controlPanel.octaveShift : 0);
@@ -58,7 +58,7 @@ export class Piano {
             let node: Soundfont.Player | undefined;
             if (this.instrument) {
                 node = this.instrument.play(noteReal, undefined, {
-                    gain: this.controlPanel.volume,
+                    gain: this.controlPanel.volume * velocity,
                 });
             }
 
@@ -78,8 +78,8 @@ export class Piano {
         }
     }
 
-    pressNote(note: string, duration: number) {
-        this.playNote(note);
+    pressNote(note: string, duration: number, velocity?: number) {
+        this.playNote(note, true, velocity);
         setTimeout(() => this.stopNote(note), duration);
     }
 

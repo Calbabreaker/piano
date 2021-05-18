@@ -3,7 +3,7 @@ import { midiToNote } from "./notes";
 
 export class MidiPlayer {
     midiToPlay: Midi | null = null;
-    pressNoteFunc: (note: string, duration: number) => void;
+    pressNoteFunc: (note: string, duration: number, velocity?: number) => void;
 
     midiPaused = true;
     trackIndexUpToArray: number[] = [];
@@ -41,7 +41,7 @@ export class MidiPlayer {
             if (delta > 0) {
                 const noteName = midiToNote(note.midi);
                 // don't play the note if we're too behind
-                if (delta < 100) this.pressNoteFunc(noteName, note.duration * 1000);
+                if (delta < 100) this.pressNoteFunc(noteName, note.duration * 1000, note.velocity);
                 this.trackIndexUpToArray[i]++;
             }
         });
