@@ -2,6 +2,7 @@ import { generateNotesFromRange, getNoteName, getOctave, keyBinds } from "./note
 import * as Soundfont from "soundfont-player";
 import { ControlPanel } from "./control_panel";
 import { htmlToElement, mainElm } from "./dom_utils";
+import { MidiPlayer } from "./midi_player";
 
 interface IActiveNote {
     audioNode?: Soundfont.Player;
@@ -9,11 +10,10 @@ interface IActiveNote {
 }
 
 export class Piano {
-    audioContext = new AudioContext();
     activeNoteMap = new Map<string, IActiveNote>();
-
-    mouseIsPressed = false;
-    controlPanel = new ControlPanel();
+    mouseIsDown = false;
+    midiPlayer = new MidiPlayer(this.pressNote.bind(this));
+    controlPanel = new ControlPanel(this.midiPlayer);
 
     get instrument(): Soundfont.Player | null {
         return this.controlPanel.instrument;
@@ -21,11 +21,11 @@ export class Piano {
 
     constructor(startNote: string, endNote: string) {
         window.addEventListener("mousedown", () => {
-            this.mouseIsPressed = true;
+            this.mouseIsDown = true;
         });
 
         window.addEventListener("mouseup", () => {
-            this.mouseIsPressed = false;
+            this.mouseIsDown = false;
             this.stopAllNotes();
         });
 
@@ -78,6 +78,11 @@ export class Piano {
         }
     }
 
+    pressNote(note: string, duration: number) {
+        this.playNote(note);
+        setTimeout(() => this.stopNote(note), duration);
+    }
+
     stopAllNotes(): void {
         const keys = document.querySelectorAll(".pressed");
         keys.forEach((key) => {
@@ -105,7 +110,7 @@ export class Piano {
 
             key.onmousedown = () => this.playNote(note, false);
             key.onmouseup = () => this.stopNote(note);
-            key.onmouseenter = () => this.mouseIsPressed && this.playNote(note, false);
+            key.onmouseenter = () => this.mouseIsDown && this.playNote(note, false);
             key.onmouseleave = () => this.stopNote(note);
 
             piano.appendChild(key);

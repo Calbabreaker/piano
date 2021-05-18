@@ -12,6 +12,7 @@
         "parcel": "^2.0.0-beta.2"
     },
     "dependencies": {
+        "@tonejs/midi": "^2.0.27",
         "soundfont-player": "^0.12.0"
     }
 }

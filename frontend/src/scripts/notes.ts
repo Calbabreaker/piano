@@ -83,3 +83,9 @@ export function generateNotesFromRange(
 
     return { notes, whiteKeys };
 }
+
+export function midiToNote(midiNote: number) {
+    const octave = Math.floor(midiNote / 12) - 1;
+    const note = noteNames[midiNote % 12];
+    return note + octave;
+}

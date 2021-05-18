@@ -1,6 +1,7 @@
 import * as Soundfont from "soundfont-player";
 import { htmlToElement, mainElm } from "./dom_utils";
 import { instrumentNames } from "./instrument_names";
+import { MidiPlayer } from "./midi_player";
 
 export class ControlPanel {
     private _sustain = false;
@@ -53,44 +54,65 @@ export class ControlPanel {
     volumeDisplay: HTMLElement;
     octaveShiftSelect: HTMLSelectElement;
     instrumentStatus: HTMLElement;
+    playStopButton: HTMLButtonElement;
+    midiFileInput: HTMLInputElement;
     panel: HTMLElement;
 
     audioContext = new AudioContext();
     instrument: Soundfont.Player | null = null;
+    midiPlayer: MidiPlayer;
 
-    constructor() {
+    constructor(midiPlayer: MidiPlayer) {
+        this.midiPlayer = midiPlayer;
         this.panel = htmlToElement(`<div class="control-panel"/>`);
         mainElm.appendChild(this.panel);
 
-        const sustainControl = this.createControl("Sustain (s):");
+        // sustain control
+        const sustainControl = htmlToElement(`<div><span>Sustain (s): </span></div>`);
+        this.panel.appendChild(sustainControl);
+
         this.sustainInput = htmlToElement(`<input type="checkbox"></input>`) as HTMLInputElement;
         this.sustainInput.onchange = () => (this._sustain = this.sustainInput.checked);
         sustainControl.appendChild(this.sustainInput);
 
-        const octaveShiftControl = this.createControl("Octave Shift (- ctrl, + alt): ");
+        // octave shift control
+        const octaveShiftControl = htmlToElement(
+            `<div><span>Octave Shift (- ctrl, + alt): </span></div>`
+        );
+        this.panel.appendChild(octaveShiftControl);
+
         this.octaveShiftSelect = document.createElement("select");
         this.octaveShiftSelect.onchange = () =>
             (this._octaveShift = parseInt(this.octaveShiftSelect.value));
         octaveShiftControl.appendChild(this.octaveShiftSelect);
+
         for (let i = -3; i <= 3; i++) {
             const octaveShiftOption = htmlToElement(`<option>${i}</option>`);
             this.octaveShiftSelect.appendChild(octaveShiftOption);
         }
 
-        const volumeControl = this.createControl("Volume: ");
+        // volume control
+        const volumeControl = htmlToElement(`<div><span>Volume: </span></div>`);
+        this.panel.appendChild(volumeControl);
+
         const volumeInput = htmlToElement(
-            `<input type="range" min="0" max="6" step="0.01" value="${this.volume}">`
+            `<input type="range" min="0" max="10" step="0.1" value="${this.volume}">`
         ) as HTMLInputElement;
         volumeInput.onchange = () => (this.volume = parseFloat(volumeInput.value));
         volumeControl.appendChild(volumeInput);
+
         this.volumeDisplay = document.createElement("span");
         volumeControl.appendChild(this.volumeDisplay);
 
-        const instrumentControl = this.createControl("Instrument: ");
+        // instrument control
+        const instrumentControl = htmlToElement(`<div><span>Instrument: </span></div>`);
+        this.panel.appendChild(instrumentControl);
+
         const instrumentSelect = document.createElement("select");
         instrumentSelect.onchange = () =>
             (this.instrumentName = instrumentSelect.value as Soundfont.InstrumentName);
         instrumentControl.appendChild(instrumentSelect);
+
         this.instrumentStatus = document.createElement("span");
         instrumentControl.appendChild(this.instrumentStatus);
 
@@ -101,6 +123,27 @@ export class ControlPanel {
                 instrumentSelect.selectedIndex = i;
             }
         });
+
+        // midi control
+        const midiControl = htmlToElement(`<div><p>Play a midi file: </p></div>`);
+        this.panel.appendChild(midiControl);
+
+        this.midiFileInput = htmlToElement(`<input type="file"/>`) as HTMLInputElement;
+        this.midiFileInput.onchange = () =>
+            this.midiPlayer.setMidiFile(this.midiFileInput.files?.[0]);
+        midiControl.appendChild(this.midiFileInput);
+        midiControl.appendChild(document.createElement("br"));
+
+        this.playStopButton = htmlToElement(`<button>Play</button>`) as HTMLButtonElement;
+        this.playStopButton.onclick = () => this.playMidi();
+        midiControl.appendChild(this.playStopButton);
+
+        const resetButton = htmlToElement(`<button>Reset</button>`);
+        resetButton.onclick = () => {
+            this.stopMidi();
+            this.midiPlayer.reset();
+        };
+        midiControl.appendChild(resetButton);
 
         // call the setters
         this.sustain = this._sustain;
@@ -125,9 +168,15 @@ export class ControlPanel {
         });
     }
 
-    createControl(text: string): HTMLElement {
-        const control = htmlToElement(`<div><span>${text}</span></div>`);
-        this.panel.appendChild(control);
-        return control;
+    playMidi() {
+        this.playStopButton.textContent = "Stop";
+        this.playStopButton.onclick = () => this.stopMidi();
+        this.midiPlayer.resume();
+    }
+
+    stopMidi() {
+        this.playStopButton.textContent = "Play";
+        this.playStopButton.onclick = () => this.playMidi();
+        this.midiPlayer.pause();
     }
 }
