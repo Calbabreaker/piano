@@ -1,0 +1,19 @@
+{
+    "name": "piano-backend",
+    "author": "Calbabreaker",
+    "license": "GPL-3",
+    "private": true,
+    "scripts": {
+        "dev": "concurrently \"tsc -w\" \"nodemon dist/index.js\"",
+        "start": "tsc && node dist/index.js"
+    },
+    "devDependencies": {
+        "concurrently": "^6.1.0",
+        "nodemon": "^2.0.7",
+        "typescript": "^4.2.4"
+    },
+    "dependencies": {
+        "http": "^0.0.1-security",
+        "socket.io": "^4.1.2"
+    }
+}
