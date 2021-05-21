@@ -1,25 +1,21 @@
-import { generateNotesFromRange, getNoteName, getOctave, keyBinds } from "./notes";
+import { keyBinds } from "./notes";
 import * as Soundfont from "soundfont-player";
 import { ControlPanel } from "./control_panel";
-import { htmlToElement, mainElm } from "./dom_utils";
 import { MidiPlayer } from "./midi_player";
-
-interface IActiveNote {
-    audioNode?: Soundfont.Player;
-    key: HTMLElement;
-}
+import { Keyboard } from "./keyboard";
 
 export class Piano {
-    activeNoteMap = new Map<string, IActiveNote>();
     mouseIsDown = false;
     midiPlayer = new MidiPlayer(this.pressNote.bind(this));
-    controlPanel = new ControlPanel(this.midiPlayer);
+    controlPanel = new ControlPanel(this.midiPlayer, this.stopAllNotes.bind(this));
+    keyboard: Keyboard;
 
-    get instrument(): Soundfont.Player | null {
+    get instrument(): Soundfont.Player | undefined {
         return this.controlPanel.instrument;
     }
 
     constructor(startNote: string, endNote: string) {
+        this.keyboard = new Keyboard(startNote, endNote);
         window.addEventListener("mousedown", () => {
             this.mouseIsDown = true;
         });
@@ -43,77 +39,48 @@ export class Piano {
             if (note) this.stopNote(note);
         });
 
-        this.createDOM(startNote, endNote);
-    }
-
-    playNote(note: string, includeShift = true, velocity = 1): void {
-        if (this.activeNoteMap.has(note)) return;
-
-        const octave = getOctave(note) + (includeShift ? this.controlPanel.octaveShift : 0);
-        const noteReal = getNoteName(note) + octave;
-        const key = document.querySelector<HTMLElement>(`[data-note~="${noteReal}"]`);
-
-        if (key) {
-            key.classList.add("pressed");
-            let node: Soundfont.Player | undefined;
-            if (this.instrument) {
-                node = this.instrument.play(noteReal, undefined, {
-                    gain: this.controlPanel.volume * velocity,
-                });
+        const mousePlayNote = (event: MouseEvent) => {
+            const key = event.target as HTMLDivElement | undefined;
+            if (key?.dataset?.note) {
+                this.playNote(key.dataset.note, 1, false);
             }
+        };
 
-            this.activeNoteMap.set(note, { audioNode: node, key });
-        }
-    }
+        window.addEventListener("mousedown", mousePlayNote);
+        window.addEventListener("mouseenter", mousePlayNote);
 
-    stopNote(note: string): void {
-        const activeNote = this.activeNoteMap.get(note);
+        window.addEventListener("mouseup", () => {
+            this.stopAllNotes();
+        });
 
-        if (activeNote) {
-            activeNote.key.classList.remove("pressed");
-            this.activeNoteMap.delete(note);
-            if (!this.controlPanel.sustain && this.instrument && activeNote.audioNode) {
-                activeNote.audioNode.stop();
+        window.addEventListener("mouseleave", (event) => {
+            const key = event.target as HTMLDivElement | undefined;
+            if (key?.dataset?.note) {
+                this.stopNote(key.dataset.note);
             }
-        }
+        });
     }
 
-    pressNote(note: string, duration: number, velocity?: number) {
-        this.playNote(note, true, velocity);
-        setTimeout(() => this.stopNote(note), duration);
+    playNote(note: string, velocity = 1, includeShift = true): void {
+        if (includeShift) note = this.controlPanel.getShiftedNote(note);
+        this.keyboard.playNote(this.instrument, note, velocity * this.controlPanel.volume);
+    }
+
+    stopNote(note: string, includeShift = true): void {
+        if (includeShift) note = this.controlPanel.getShiftedNote(note);
+        this.keyboard.stopNote(this.instrument, note, this.controlPanel.sustain);
+    }
+
+    pressNote(note: string, duration: number, velocity = 1) {
+        this.keyboard.pressNote(
+            this.instrument,
+            note,
+            duration,
+            this.controlPanel.volume * velocity
+        );
     }
 
     stopAllNotes(): void {
-        const keys = document.querySelectorAll(".pressed");
-        keys.forEach((key) => {
-            key.classList.remove("pressed");
-        });
-
-        if (!this.controlPanel.sustain && this.instrument) {
-            this.instrument.stop();
-            this.activeNoteMap.clear();
-        }
-    }
-
-    createDOM(startNote: string, endNote: string): void {
-        const piano = htmlToElement(`<div class="piano"/>`);
-        mainElm.appendChild(piano);
-
-        const { notes, whiteKeys } = generateNotesFromRange(startNote, endNote);
-        piano.style.setProperty("--white-keys", whiteKeys.toString());
-
-        notes.forEach((note) => {
-            const isWhite = getNoteName(note).length === 1;
-            const key = htmlToElement(
-                `<div class="key ${isWhite ? "white" : "black"}" data-note="${note}"/>`
-            );
-
-            key.onmousedown = () => this.playNote(note, false);
-            key.onmouseup = () => this.stopNote(note);
-            key.onmouseenter = () => this.mouseIsDown && this.playNote(note, false);
-            key.onmouseleave = () => this.stopNote(note);
-
-            piano.appendChild(key);
-        });
+        this.keyboard.stopAllNotes(this.instrument, this.controlPanel.sustain);
     }
 }

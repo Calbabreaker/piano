@@ -1,54 +1,14 @@
 import * as Soundfont from "soundfont-player";
-import { htmlToElement, mainElm } from "./dom_utils";
+import { htmlToElement, InstrumentCache, mainElm } from "./utils";
 import { instrumentNames } from "./instrument_names";
 import { MidiPlayer } from "./midi_player";
+import { getNoteName, getOctave } from "./notes";
 
 export class ControlPanel {
-    private _sustain = false;
-    private _volume = 25;
-    private _octaveShift = 0;
-    private _instrumentName: Soundfont.InstrumentName = "acoustic_grand_piano";
-
-    get sustain(): boolean {
-        return this._sustain;
-    }
-
-    set sustain(sustain: boolean) {
-        this._sustain = sustain;
-        this.sustainInput.checked = sustain;
-    }
-
-    get volume(): number {
-        return this._volume;
-    }
-
-    set volume(volume: number) {
-        this._volume = volume;
-        this.volumeDisplay.textContent = volume.toString();
-    }
-
-    get octaveShift(): number {
-        return this._octaveShift;
-    }
-
-    set octaveShift(octaveShift: number) {
-        this._octaveShift = octaveShift;
-        this.octaveShiftSelect.value = octaveShift.toString();
-    }
-
-    get instrumentName(): Soundfont.InstrumentName {
-        return this._instrumentName;
-    }
-
-    set instrumentName(name: Soundfont.InstrumentName) {
-        this._instrumentName = name;
-        this.instrument = null;
-        this.instrumentStatus.textContent = " Loading...";
-        Soundfont.instrument(this.audioContext, name).then((ins) => {
-            this.instrument = ins;
-            this.instrumentStatus.textContent = "";
-        });
-    }
+    sustain = false;
+    volume = 25;
+    octaveShift = 0;
+    instrumentName: Soundfont.InstrumentName = "acoustic_grand_piano";
 
     sustainInput: HTMLInputElement;
     volumeDisplay: HTMLElement;
@@ -59,11 +19,14 @@ export class ControlPanel {
     panel: HTMLElement;
 
     audioContext = new AudioContext();
-    instrument: Soundfont.Player | null = null;
     midiPlayer: MidiPlayer;
+    stopAllNotesFunc: () => void;
+    instrumentCache = new InstrumentCache();
+    instrument?: Soundfont.Player;
 
-    constructor(midiPlayer: MidiPlayer) {
+    constructor(midiPlayer: MidiPlayer, stopAllNotesFunc: ControlPanel["stopAllNotesFunc"]) {
         this.midiPlayer = midiPlayer;
+        this.stopAllNotesFunc = stopAllNotesFunc;
         this.panel = htmlToElement(`<div class="control-panel"/>`);
         mainElm.appendChild(this.panel);
 
@@ -72,7 +35,7 @@ export class ControlPanel {
         this.panel.appendChild(sustainControl);
 
         this.sustainInput = htmlToElement(`<input type="checkbox"></input>`) as HTMLInputElement;
-        this.sustainInput.onchange = () => (this._sustain = this.sustainInput.checked);
+        this.sustainInput.onchange = () => (this.sustain = this.sustainInput.checked);
         sustainControl.appendChild(this.sustainInput);
 
         // octave shift control
@@ -83,7 +46,7 @@ export class ControlPanel {
 
         this.octaveShiftSelect = document.createElement("select");
         this.octaveShiftSelect.onchange = () =>
-            (this._octaveShift = parseInt(this.octaveShiftSelect.value));
+            (this.octaveShift = parseInt(this.octaveShiftSelect.value));
         octaveShiftControl.appendChild(this.octaveShiftSelect);
 
         for (let i = -3; i <= 3; i++) {
@@ -98,7 +61,7 @@ export class ControlPanel {
         const volumeInput = htmlToElement(
             `<input type="range" min="0" max="50" value="${this.volume}">`
         ) as HTMLInputElement;
-        volumeInput.onchange = () => (this.volume = parseFloat(volumeInput.value));
+        volumeInput.onchange = () => this.setVolume(parseFloat(volumeInput.value));
         volumeControl.appendChild(volumeInput);
 
         this.volumeDisplay = document.createElement("span");
@@ -110,7 +73,7 @@ export class ControlPanel {
 
         const instrumentSelect = document.createElement("select");
         instrumentSelect.onchange = () =>
-            (this.instrumentName = instrumentSelect.value as Soundfont.InstrumentName);
+            this.setInstrumentName(instrumentSelect.value as Soundfont.InstrumentName);
         instrumentControl.appendChild(instrumentSelect);
 
         this.instrumentStatus = document.createElement("span");
@@ -119,7 +82,7 @@ export class ControlPanel {
         instrumentNames.forEach((name, i) => {
             const option = htmlToElement(`<option>${name}</option>`);
             instrumentSelect.appendChild(option);
-            if (name === this._instrumentName) {
+            if (name === this.instrumentName) {
                 instrumentSelect.selectedIndex = i;
             }
         });
@@ -146,14 +109,14 @@ export class ControlPanel {
         midiControl.appendChild(resetButton);
 
         // call the setters
-        this.sustain = this._sustain;
-        this.octaveShift = this._octaveShift;
-        this.volume = this._volume;
-        this.instrumentName = this._instrumentName;
+        this.setSustain(this.sustain);
+        this.setOctaveShift(this.octaveShift);
+        this.setVolume(this.volume);
+        this.setInstrumentName(this.instrumentName);
 
         window.addEventListener("keydown", (event) => {
             if (event.code === "KeyS") {
-                this.sustain = !this.sustain;
+                this.setSustain(!this.sustain);
             }
 
             let newOctaveShift = this.octaveShift;
@@ -163,9 +126,43 @@ export class ControlPanel {
             if (newOctaveShift !== this.octaveShift) {
                 if (newOctaveShift < -3) newOctaveShift = 3;
                 if (newOctaveShift > 3) newOctaveShift = -3;
-                this.octaveShift = newOctaveShift;
+                this.stopAllNotesFunc();
+                this.setOctaveShift(newOctaveShift);
             }
         });
+    }
+
+    setSustain(sustain: boolean) {
+        this.sustain = sustain;
+        this.sustainInput.checked = sustain;
+    }
+
+    setVolume(volume: number) {
+        this.volume = volume;
+        this.volumeDisplay.textContent = volume.toString();
+    }
+
+    setOctaveShift(octaveShift: number) {
+        this.octaveShift = octaveShift;
+        this.octaveShiftSelect.value = octaveShift.toString();
+    }
+
+    setInstrumentName(name: Soundfont.InstrumentName) {
+        this.instrumentName = name;
+        this.instrument = this.instrumentCache.get(
+            name,
+            () => (this.instrumentStatus.textContent = " Loading..."),
+            (ins) => {
+                this.instrument = ins;
+                this.instrumentStatus.textContent = "";
+            }
+        );
+    }
+
+    getShiftedNote(note: string): string {
+        const octave = getOctave(note) + this.octaveShift;
+        const noteReal = getNoteName(note) + octave;
+        return noteReal;
     }
 
     playMidi() {

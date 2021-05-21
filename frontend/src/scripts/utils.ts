@@ -1,3 +1,5 @@
+import * as Soundfont from "soundfont-player";
+
 export const mainElm = document.querySelector("main") as HTMLElement;
 
 export function htmlToElement(html: string): HTMLElement {
@@ -8,4 +10,32 @@ export function htmlToElement(html: string): HTMLElement {
 
 export interface IArrayIndexUpTo<T> extends Array<T> {
     indexUpTo?: number;
+}
+
+export class InstrumentCache {
+    instruments: { [key: string]: Promise<Soundfont.Player> | Soundfont.Player | undefined } = {};
+    audioContext = new AudioContext();
+
+    get(
+        name: Soundfont.InstrumentName,
+        loadStart?: () => void,
+        loadEnd?: (instrument: Soundfont.Player) => void
+    ): Soundfont.Player | undefined {
+        const instrument = this.instruments[name];
+        if (instrument !== undefined) {
+            if (instrument instanceof Promise) return;
+            return instrument;
+        }
+
+        const newInstrumentPromise = Soundfont.instrument(this.audioContext, name);
+        this.instruments[name] = newInstrumentPromise;
+        if (loadStart) loadStart();
+        newInstrumentPromise
+            .then((newInstrument) => {
+                this.instruments[name] = newInstrument;
+                if (loadEnd) loadEnd(newInstrument);
+            })
+            .catch(console.error);
+        return;
+    }
 }

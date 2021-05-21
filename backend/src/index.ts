@@ -8,7 +8,7 @@ const server = createServer().listen(PORT, "0.0.0.0", () => {
 
 const io = new Server(server, {
     cors: {
-        origin: "http://localhost:1234",
+        origin: "*",
         methods: ["GET", "POST"],
     },
 });
