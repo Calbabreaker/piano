@@ -4,12 +4,19 @@ import { Player } from "soundfont-player";
 
 export class Keyboard {
     activeAudioNodes = new Map<string, Player>();
+    startNote: string;
+    endNote: string;
 
     constructor(startNote: string, endNote: string) {
+        this.startNote = startNote;
+        this.endNote = endNote;
+    }
+
+    createDOM() {
         const piano = htmlToElement(`<div class="piano"/>`);
         mainElm.appendChild(piano);
 
-        const { notes, whiteKeys } = generateNotesFromRange(startNote, endNote);
+        const { notes, whiteKeys } = generateNotesFromRange(this.startNote, this.endNote);
         piano.style.setProperty("--white-keys", whiteKeys.toString());
 
         notes.forEach((note) => {
@@ -58,7 +65,7 @@ export class Keyboard {
         setTimeout(() => this.stopNote(instrument, note, false), duration);
     }
 
-    stopAllNotes(instrument: Player | null, sustain: boolean): void {
+    stopAllNotes(instrument: Player | undefined, sustain: boolean): void {
         const keys = document.querySelectorAll(".pressed");
         keys.forEach((key) => {
             key.classList.remove("pressed");

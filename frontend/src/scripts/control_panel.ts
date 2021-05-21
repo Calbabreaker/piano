@@ -3,6 +3,7 @@ import { htmlToElement, InstrumentCache, mainElm } from "./utils";
 import { instrumentNames } from "./instrument_names";
 import { MidiPlayer } from "./midi_player";
 import { getNoteName, getOctave } from "./notes";
+import { SocketPlayer } from "./socket_player";
 
 export class ControlPanel {
     sustain = false;
@@ -19,14 +20,20 @@ export class ControlPanel {
     panel: HTMLElement;
 
     audioContext = new AudioContext();
-    midiPlayer: MidiPlayer;
-    stopAllNotesFunc: () => void;
-    instrumentCache = new InstrumentCache();
     instrument?: Soundfont.Player;
+    instrumentCache = new InstrumentCache();
+    midiPlayer: MidiPlayer;
+    socketPlayer: SocketPlayer;
+    stopAllNotesFunc: () => void;
 
-    constructor(midiPlayer: MidiPlayer, stopAllNotesFunc: ControlPanel["stopAllNotesFunc"]) {
+    constructor(
+        midiPlayer: MidiPlayer,
+        socketPlayer: SocketPlayer,
+        stopAllNotesFunc: ControlPanel["stopAllNotesFunc"]
+    ) {
         this.midiPlayer = midiPlayer;
         this.stopAllNotesFunc = stopAllNotesFunc;
+        this.socketPlayer = socketPlayer;
         this.panel = htmlToElement(`<div class="control-panel"/>`);
         mainElm.appendChild(this.panel);
 
@@ -107,6 +114,13 @@ export class ControlPanel {
             this.midiPlayer.reset();
         };
         midiControl.appendChild(resetButton);
+
+        // socket multiplayer stuff
+        const socketControl = htmlToElement(`<div><p>Join a room: </p></div>`);
+        this.panel.appendChild(socketControl);
+
+        const joinButton = htmlToElement(`<button>Join</button>`);
+        socketControl.appendChild(joinButton);
 
         // call the setters
         this.setSustain(this.sustain);

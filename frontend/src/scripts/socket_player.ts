@@ -1,16 +1,12 @@
 import { io, Socket } from "socket.io-client";
+import { Keyboard } from "./keyboard";
 
 export class SocketPlayer {
     socket: Socket | null = null;
-    playNoteFunc: (note: string, velocity: number) => void;
-    stopNoteFunc: (note: string) => void;
+    keyboard: Keyboard;
 
-    constructor(
-        playNoteFunc: SocketPlayer["playNoteFunc"],
-        stopNoteFunc: SocketPlayer["stopNoteFunc"]
-    ) {
-        this.playNoteFunc = playNoteFunc;
-        this.stopNoteFunc = stopNoteFunc;
+    constructor(keyboard: Keyboard) {
+        this.keyboard = keyboard;
     }
 
     connect(): Promise<Socket> {

@@ -3,12 +3,17 @@ import * as Soundfont from "soundfont-player";
 import { ControlPanel } from "./control_panel";
 import { MidiPlayer } from "./midi_player";
 import { Keyboard } from "./keyboard";
+import { SocketPlayer } from "./socket_player";
 
 export class Piano {
+    // Keyboard is the lower level class that will actually do the playing and note pressing
+    // while this class will handle events.
+    keyboard: Keyboard;
+
     mouseIsDown = false;
     midiPlayer = new MidiPlayer(this.pressNote.bind(this));
-    controlPanel = new ControlPanel(this.midiPlayer, this.stopAllNotes.bind(this));
-    keyboard: Keyboard;
+    socketPlayer: SocketPlayer;
+    controlPanel: ControlPanel;
 
     get instrument(): Soundfont.Player | undefined {
         return this.controlPanel.instrument;
@@ -16,6 +21,15 @@ export class Piano {
 
     constructor(startNote: string, endNote: string) {
         this.keyboard = new Keyboard(startNote, endNote);
+        this.socketPlayer = new SocketPlayer(this.keyboard);
+        this.controlPanel = new ControlPanel(
+            this.midiPlayer,
+            this.socketPlayer,
+            this.stopAllNotes.bind(this)
+        );
+
+        this.keyboard.createDOM();
+
         window.addEventListener("mousedown", () => {
             this.mouseIsDown = true;
         });
@@ -39,25 +53,28 @@ export class Piano {
             if (note) this.stopNote(note);
         });
 
-        const mousePlayNote = (event: MouseEvent) => {
+        window.addEventListener("mousedown", (event) => {
             const key = event.target as HTMLDivElement | undefined;
-            if (key?.dataset?.note) {
-                this.playNote(key.dataset.note, 1, false);
-            }
-        };
+            if (key?.dataset?.note) this.playNote(key.dataset.note, 1, false);
 
-        window.addEventListener("mousedown", mousePlayNote);
-        window.addEventListener("mouseenter", mousePlayNote);
+            this.mouseIsDown = true;
+        });
+
+        window.addEventListener("mouseover", (event) => {
+            if (!this.mouseIsDown) return;
+
+            const key = event.target as HTMLDivElement | undefined;
+            if (key?.dataset?.note) this.playNote(key.dataset.note, 1, false);
+        });
 
         window.addEventListener("mouseup", () => {
             this.stopAllNotes();
+            this.mouseIsDown = false;
         });
 
-        window.addEventListener("mouseleave", (event) => {
+        window.addEventListener("mouseout", (event) => {
             const key = event.target as HTMLDivElement | undefined;
-            if (key?.dataset?.note) {
-                this.stopNote(key.dataset.note);
-            }
+            if (key?.dataset?.note) this.stopNote(key.dataset.note, false);
         });
     }
 
