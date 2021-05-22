@@ -16,10 +16,13 @@ export class SocketPlayer {
 
     connect(roomName: string): Promise<Socket> {
         return new Promise((resolve, reject) => {
-            const BACKEND_URL = process.env.BACKEND_URL;
-            if (BACKEND_URL === undefined) return reject("No server specified in client build!");
-            this.socket = io(BACKEND_URL, {
+            const BACKEND_HOST = process.env.BACKEND_HOST;
+            if (BACKEND_HOST === undefined)
+                return reject("No backend server was specified in client build!");
+
+            this.socket = io(BACKEND_HOST, {
                 query: { roomName },
+                path: process.env.BACKEND_PATH,
             });
 
             this.socket.on("connect", () => {
