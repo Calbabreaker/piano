@@ -1,6 +1,5 @@
 {
     "compilerOptions": {
-        "baseUrl": "./",
         "module": "commonjs",
         "moduleResolution": "node",
         "outDir": "dist/",
@@ -17,7 +16,10 @@
         "strictBindCallApply": true,
         "strictFunctionTypes": true,
         "strictNullChecks": true,
-        "strictPropertyInitialization": true
+        "strictPropertyInitialization": true,
+        "paths": {
+            "~*": ["./*"]
+        }
     },
     "include": ["src/**/*.ts"]
 }

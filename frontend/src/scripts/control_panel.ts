@@ -1,6 +1,6 @@
 import * as Soundfont from "soundfont-player";
 import { htmlToElement, InstrumentCache, mainElm } from "./utils";
-import { instrumentNames } from "./instrument_names";
+import { instrumentNames, InstrumentName } from "~/../backend/src/instrument_names";
 import { MidiPlayer } from "./midi_player";
 import { getNoteName, getOctave } from "./notes";
 import { SocketPlayer } from "./socket_player";
@@ -9,7 +9,7 @@ export class ControlPanel {
     sustain = false;
     volume = 25;
     octaveShift = 0;
-    instrumentName: Soundfont.InstrumentName = "acoustic_grand_piano";
+    instrumentName: InstrumentName = "acoustic_grand_piano";
 
     sustainInput: HTMLInputElement;
     volumeDisplay: HTMLElement;
@@ -17,11 +17,10 @@ export class ControlPanel {
     instrumentStatus: HTMLElement;
     playStopButton: HTMLButtonElement;
     midiFileInput: HTMLInputElement;
-    panel: HTMLElement;
 
     audioContext = new AudioContext();
     instrument?: Soundfont.Player;
-    instrumentCache = new InstrumentCache();
+    instrumentCache: InstrumentCache;
     midiPlayer: MidiPlayer;
     socketPlayer: SocketPlayer;
     stopAllNotesFunc: () => void;
@@ -29,17 +28,19 @@ export class ControlPanel {
     constructor(
         midiPlayer: MidiPlayer,
         socketPlayer: SocketPlayer,
+        instrumentCache: InstrumentCache,
         stopAllNotesFunc: ControlPanel["stopAllNotesFunc"]
     ) {
         this.midiPlayer = midiPlayer;
-        this.stopAllNotesFunc = stopAllNotesFunc;
         this.socketPlayer = socketPlayer;
-        this.panel = htmlToElement(`<div class="control-panel"/>`);
-        mainElm.appendChild(this.panel);
+        this.instrumentCache = instrumentCache;
+        this.stopAllNotesFunc = stopAllNotesFunc;
+        const panel = htmlToElement(`<div class="control-panel"/>`);
+        mainElm.appendChild(panel);
 
         // sustain control
         const sustainControl = htmlToElement(`<div><span>Sustain (s): </span></div>`);
-        this.panel.appendChild(sustainControl);
+        panel.appendChild(sustainControl);
 
         this.sustainInput = htmlToElement(`<input type="checkbox"></input>`) as HTMLInputElement;
         this.sustainInput.onchange = () => (this.sustain = this.sustainInput.checked);
@@ -49,7 +50,7 @@ export class ControlPanel {
         const octaveShiftControl = htmlToElement(
             `<div><span>Octave Shift (- ctrl, + alt): </span></div>`
         );
-        this.panel.appendChild(octaveShiftControl);
+        panel.appendChild(octaveShiftControl);
 
         this.octaveShiftSelect = document.createElement("select");
         this.octaveShiftSelect.onchange = () =>
@@ -63,7 +64,7 @@ export class ControlPanel {
 
         // volume control
         const volumeControl = htmlToElement(`<div><span>Volume: </span></div>`);
-        this.panel.appendChild(volumeControl);
+        panel.appendChild(volumeControl);
 
         const volumeInput = htmlToElement(
             `<input type="range" min="0" max="50" value="${this.volume}">`
@@ -76,11 +77,11 @@ export class ControlPanel {
 
         // instrument control
         const instrumentControl = htmlToElement(`<div><span>Instrument: </span></div>`);
-        this.panel.appendChild(instrumentControl);
+        panel.appendChild(instrumentControl);
 
         const instrumentSelect = document.createElement("select");
         instrumentSelect.onchange = () =>
-            this.setInstrumentName(instrumentSelect.value as Soundfont.InstrumentName);
+            this.setInstrumentName(instrumentSelect.value as InstrumentName);
         instrumentControl.appendChild(instrumentSelect);
 
         this.instrumentStatus = document.createElement("span");
@@ -96,7 +97,7 @@ export class ControlPanel {
 
         // midi control
         const midiControl = htmlToElement(`<div><p>Play a midi file: </p></div>`);
-        this.panel.appendChild(midiControl);
+        panel.appendChild(midiControl);
 
         this.midiFileInput = htmlToElement(`<input type="file"/>`) as HTMLInputElement;
         this.midiFileInput.onchange = () =>
@@ -117,10 +118,27 @@ export class ControlPanel {
 
         // socket multiplayer stuff
         const socketControl = htmlToElement(`<div><p>Join a room: </p></div>`);
-        this.panel.appendChild(socketControl);
+        panel.appendChild(socketControl);
+
+        const roomInput = htmlToElement(
+            `<input type="text" placeholder="Room name"/>`
+        ) as HTMLInputElement;
+        socketControl.appendChild(roomInput);
 
         const joinButton = htmlToElement(`<button>Join</button>`);
+        joinButton.onclick = async () => {
+            try {
+                statusText.textContent = "Joining...";
+                await this.socketPlayer.connect(roomInput.value);
+                statusText.textContent = "";
+            } catch (error) {
+                statusText.textContent = error;
+            }
+        };
         socketControl.appendChild(joinButton);
+
+        const statusText = document.createElement("span");
+        socketControl.appendChild(statusText);
 
         // call the setters
         this.setSustain(this.sustain);
@@ -130,7 +148,8 @@ export class ControlPanel {
 
         window.addEventListener("keydown", (event) => {
             if (event.code === "KeyS") {
-                this.setSustain(!this.sustain);
+                this.sustain = !this.sustain;
+                this.sustainInput.checked = this.sustain;
             }
 
             let newOctaveShift = this.octaveShift;
@@ -161,7 +180,7 @@ export class ControlPanel {
         this.octaveShiftSelect.value = octaveShift.toString();
     }
 
-    setInstrumentName(name: Soundfont.InstrumentName) {
+    setInstrumentName(name: InstrumentName) {
         this.instrumentName = name;
         this.instrument = this.instrumentCache.get(
             name,

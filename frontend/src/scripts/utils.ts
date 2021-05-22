@@ -1,4 +1,5 @@
 import * as Soundfont from "soundfont-player";
+import { InstrumentName } from "~/../backend/src/instrument_names";
 
 export const mainElm = document.querySelector("main") as HTMLElement;
 
@@ -17,7 +18,7 @@ export class InstrumentCache {
     audioContext = new AudioContext();
 
     get(
-        name: Soundfont.InstrumentName,
+        name: InstrumentName,
         loadStart?: () => void,
         loadEnd?: (instrument: Soundfont.Player) => void
     ): Soundfont.Player | undefined {

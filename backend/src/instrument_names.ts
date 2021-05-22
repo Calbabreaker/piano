@@ -1,6 +1,4 @@
-import { InstrumentName } from "soundfont-player";
-
-export const instrumentNames: InstrumentName[] = [
+export const instrumentNames = [
     "accordion",
     "acoustic_bass",
     "acoustic_grand_piano",
@@ -129,4 +127,7 @@ export const instrumentNames: InstrumentName[] = [
     "whistle",
     "woodblock",
     "xylophone",
-];
+] as const;
+
+type InstrumentTuple = typeof instrumentNames;
+export type InstrumentName = InstrumentTuple[number];

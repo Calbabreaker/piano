@@ -10,18 +10,15 @@ body {
     min-height: 100%;
     display: flex;
     justify-content: center;
-}
-
-main {
-    display: flex;
-    height: 100%;
-    flex-direction: column;
+    overscroll-behavior: none;
 }
 
 .control-panel {
     background-color: black;
     color: white;
     padding: 10px;
+    display: flex;
+    flex-direction: column;
 
     input[type="range"] {
         width: 8rem;
@@ -66,8 +63,9 @@ main {
 }
 
 .pressed {
-    background-color: #1f45ee !important;
-    border: #1a37b8 solid 2px !important;
+    --color-hue: 220;
+    background-color: hsl(var(--color-hue), 70%, 50%) !important;
+    border: hsl(var(--color-hue), 70%, 40%) solid 2px !important;
     transform: translateY(2.5%);
     box-shadow: 0px 0px 1px rgba(32, 32, 32, 0.2);
 }

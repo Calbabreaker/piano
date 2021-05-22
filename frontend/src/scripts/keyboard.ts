@@ -2,21 +2,25 @@ import { generateNotesFromRange, getNoteName } from "./notes";
 import { htmlToElement, mainElm } from "./utils";
 import { Player } from "soundfont-player";
 
-export class Keyboard {
-    activeAudioNodes = new Map<string, Player>();
-    startNote: string;
-    endNote: string;
+interface IKeyboardThread {
+    activeAudioNodes: Map<string, Player>;
+    colorHue: number;
+}
 
-    constructor(startNote: string, endNote: string) {
-        this.startNote = startNote;
-        this.endNote = endNote;
+export class Keyboard {
+    threads = new Map<string, IKeyboardThread>();
+    element?: HTMLElement;
+
+    constructor() {
+        // default thread '0'
+        this.addThread("0", 220);
     }
 
-    createDOM() {
+    createDOM(startNote: string, endNote: string) {
         const piano = htmlToElement(`<div class="piano"/>`);
         mainElm.appendChild(piano);
 
-        const { notes, whiteKeys } = generateNotesFromRange(this.startNote, this.endNote);
+        const { notes, whiteKeys } = generateNotesFromRange(startNote, endNote);
         piano.style.setProperty("--white-keys", whiteKeys.toString());
 
         notes.forEach((note) => {
@@ -27,16 +31,24 @@ export class Keyboard {
 
             piano.appendChild(key);
         });
+
+        this.element = piano;
     }
 
-    playNote(instrument: Player | undefined, note: string, volume: number): void {
-        if (this.activeAudioNodes.has(note)) return;
+    addThread(id: string, colorHue: number): void {
+        this.threads.set(id, { activeAudioNodes: new Map(), colorHue });
+    }
+
+    playNote(instrument: Player | undefined, note: string, volume: number, threadID = "0"): void {
+        const thread = this.threads.get(threadID);
+        if (thread === undefined || thread.activeAudioNodes.has(note)) return;
 
         const key = document.querySelector<HTMLElement>(`[data-note~="${note}"]`);
         if (key) {
+            key.style.setProperty("--color-hue", thread.colorHue.toString());
             key.classList.add("pressed");
             if (instrument) {
-                this.activeAudioNodes.set(
+                thread.activeAudioNodes.set(
                     note,
                     instrument.play(note, undefined, {
                         gain: volume,
@@ -46,34 +58,16 @@ export class Keyboard {
         }
     }
 
-    stopNote(instrument: Player | undefined, note: string, sustain: boolean): void {
-        const activeNode = this.activeAudioNodes.get(note);
+    stopNote(instrument: Player | undefined, note: string, sustain: boolean, threadID = "0"): void {
+        const thread = this.threads.get(threadID);
+        if (thread === undefined) return;
+        const activeNode = thread.activeAudioNodes.get(note);
 
         const key = document.querySelector<HTMLElement>(`[data-note~="${note}"]`);
         if (key) {
             key.classList.remove("pressed");
-
-            if (!sustain && instrument && activeNode) {
-                activeNode.stop();
-                this.activeAudioNodes.delete(note);
-            }
-        }
-    }
-
-    pressNote(instrument: Player | undefined, note: string, duration: number, volume: number) {
-        this.playNote(instrument, note, volume);
-        setTimeout(() => this.stopNote(instrument, note, false), duration);
-    }
-
-    stopAllNotes(instrument: Player | undefined, sustain: boolean): void {
-        const keys = document.querySelectorAll(".pressed");
-        keys.forEach((key) => {
-            key.classList.remove("pressed");
-        });
-
-        if (!sustain && instrument) {
-            instrument.stop();
-            this.activeAudioNodes.clear();
+            if (!sustain && instrument && activeNode) activeNode.stop();
+            thread.activeAudioNodes.delete(note);
         }
     }
 }

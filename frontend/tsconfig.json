@@ -1,6 +1,5 @@
 {
     "compilerOptions": {
-        "baseUrl": "./",
         "moduleResolution": "node",
         "target": "es6",
 
@@ -15,7 +14,10 @@
         "strictBindCallApply": true,
         "strictFunctionTypes": true,
         "strictNullChecks": true,
-        "strictPropertyInitialization": true
+        "strictPropertyInitialization": true,
+        "paths": {
+            "~*": ["./*"]
+        }
     },
     "include": ["src/"]
 }

@@ -26,7 +26,6 @@ export const keyBinds: { [key: string]: string | undefined } = {
     Backspace: "Ab4",
     Backslash: "A4",
     ShiftLeft: "A4",
-    Enter: "B4",
     KeyA: "Bb4",
     KeyZ: "B4",
     KeyX: "C5",
@@ -46,6 +45,7 @@ export const keyBinds: { [key: string]: string | undefined } = {
     Slash: "D6",
     Quote: "Eb6",
     ShiftRight: "E6",
+    Enter: "F6",
 };
 
 export function getOctave(note: string): number {
