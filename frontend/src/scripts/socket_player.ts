@@ -60,6 +60,10 @@ export class SocketPlayer {
                     this.keyboard.addThread(clientData.socketID, clientData.colorHue);
                 }
             });
+
+            this.socket.on("client_disconnect", (socketID) => {
+                this.keyboard.threads.delete(socketID);
+            });
         });
     }
 

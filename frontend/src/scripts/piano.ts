@@ -126,7 +126,7 @@ export class Piano {
         const keys = document.querySelectorAll(".pressed") as NodeListOf<HTMLDivElement>;
         keys.forEach((key) => {
             key.classList.remove("pressed");
-            if (key.dataset.note) this.stopNote(key.dataset.note);
+            if (key.dataset.note) this.stopNote(key.dataset.note, false);
         });
     }
 }

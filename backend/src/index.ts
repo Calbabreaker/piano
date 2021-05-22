@@ -61,6 +61,7 @@ io.on("connection", (socket) => {
             }
 
             if (index !== undefined) connectedClients.splice(index, 1);
+            io.to(roomName).emit("client_disconnect", socket.id);
         });
     } catch (err) {
         socket.disconnect();
