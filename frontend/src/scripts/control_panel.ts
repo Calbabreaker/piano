@@ -2,18 +2,20 @@ import * as Soundfont from "soundfont-player";
 import { htmlToElement, InstrumentCache, mainElm } from "./utils";
 import { instrumentNames, InstrumentName } from "~/../backend/src/instrument_names";
 import { MidiPlayer } from "./midi_player";
-import { getNoteName, getOctave } from "./notes";
+import { getNoteName, getOctave, noteNames } from "./notes";
 import { SocketPlayer } from "./socket_player";
 
 export class ControlPanel {
     sustain = false;
     volume = 25;
     octaveShift = 0;
+    noteShift = 0;
     instrumentName: InstrumentName = "acoustic_grand_piano";
 
     sustainInput: HTMLInputElement;
     volumeDisplay: HTMLElement;
     octaveShiftSelect: HTMLSelectElement;
+    noteShiftSelect: HTMLSelectElement;
     instrumentStatus: HTMLElement;
     playStopButton: HTMLButtonElement;
     midiFileInput: HTMLInputElement;
@@ -60,6 +62,22 @@ export class ControlPanel {
         for (let i = -3; i <= 3; i++) {
             const octaveShiftOption = htmlToElement(`<option>${i}</option>`);
             this.octaveShiftSelect.appendChild(octaveShiftOption);
+        }
+
+        // note shift control
+        const noteShiftControl = htmlToElement(
+            `<div><span>Note Shift (no keybinds yet)</span></div>`
+        );
+        panel.appendChild(noteShiftControl);
+
+        this.noteShiftSelect = document.createElement("select");
+        this.noteShiftSelect.onchange = () =>
+            (this.noteShift = parseInt(this.noteShiftSelect.value));
+        noteShiftControl.appendChild(this.noteShiftSelect);
+
+        for (let i = -11; i <= 11; i++) {
+            const noteShiftOption = htmlToElement(`<option>${i}</option>`);
+            this.noteShiftSelect.appendChild(noteShiftOption);
         }
 
         // volume control
@@ -143,6 +161,7 @@ export class ControlPanel {
         // call the setters
         this.setSustain(this.sustain);
         this.setOctaveShift(this.octaveShift);
+        this.setNoteShift(this.noteShift);
         this.setVolume(this.volume);
         this.setInstrumentName(this.instrumentName);
 
@@ -180,6 +199,11 @@ export class ControlPanel {
         this.octaveShiftSelect.value = octaveShift.toString();
     }
 
+    setNoteShift(noteShift: number) {
+        this.noteShift = noteShift;
+        this.noteShiftSelect.value = noteShift.toString();
+    }
+
     setInstrumentName(name: InstrumentName) {
         this.instrumentName = name;
         this.instrument = this.instrumentCache.get(
@@ -193,8 +217,12 @@ export class ControlPanel {
     }
 
     getShiftedNote(note: string): string {
-        const octave = getOctave(note) + this.octaveShift;
-        const noteReal = getNoteName(note) + octave;
+        var octave = getOctave(note) + this.octaveShift;
+        var noteIndex = noteNames.indexOf(getNoteName(note));
+        noteIndex += this.noteShift;
+        octave += Math.floor(noteIndex / noteNames.length);
+        noteIndex %= noteNames.length;
+        const noteReal = noteNames[noteIndex] + octave;
         return noteReal;
     }
 
