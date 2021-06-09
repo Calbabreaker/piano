@@ -9,7 +9,6 @@ export class ControlPanel {
     sustain = false;
     volume = 25;
     octaveShift = 0;
-    noteShift = 0;
     instrumentName: InstrumentName = "acoustic_grand_piano";
 
     sustainInput: HTMLInputElement;
@@ -144,7 +143,6 @@ export class ControlPanel {
         // call the setters
         this.setSustain(this.sustain);
         this.setOctaveShift(this.octaveShift);
-        this.setNoteShift(this.noteShift);
         this.setVolume(this.volume);
         this.setInstrumentName(this.instrumentName);
 
@@ -195,7 +193,7 @@ export class ControlPanel {
     }
 
     getShiftedNote(note: string): string {
-        var octave = getOctave(note) + this.octaveShift;
+        const octave = getOctave(note) + this.octaveShift;
         const noteReal = getNoteName(note) + octave;
         return noteReal;
     }
