@@ -2,6 +2,9 @@
 
 A nice little piano with multiplayer support.
 
+Live demo at https://calbabreaker.github.io/piano.
+Note that the backend server is not enabled.
+
 ## Structure
 
 The project is seperated into two folders `frontend/` and `backend/`.
