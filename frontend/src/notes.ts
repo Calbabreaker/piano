@@ -56,32 +56,47 @@ export function getNoteName(note: string): string {
     return note.substring(0, note.length - 1);
 }
 
-export function generateNotesFromRange(
+import type { Player } from "soundfont-player";
+
+export interface INote {
+    pressed: boolean;
+    white: boolean;
+    audioNode: Player | null;
+}
+
+type INoteMap = { [key: string]: INote | undefined };
+
+export function generateNoteMapFromRange(
     startNote: string,
     endNote: string
-): { notes: string[]; whiteKeys: number } {
+): { noteMap: INoteMap; whiteKeys: number } {
     const endOctave = getOctave(endNote);
     const startOctave = getOctave(startNote);
     const startNoteNameIndex = noteNames.indexOf(getNoteName(startNote));
     const endNoteNameIndex = noteNames.indexOf(getNoteName(endNote));
 
-    const notes: string[] = [];
+    const noteMap: INoteMap = {};
     let whiteKeys = 0;
+    // go through each octave
     for (let octave = startOctave; octave <= endOctave; octave++) {
+        // if first octave start from `startNote` else use C
         let noteNameIndex = octave === startOctave ? startNoteNameIndex : 0;
+
+        // go through each key
         while (noteNameIndex < noteNames.length) {
             const reachedEndNote = octave === endOctave && noteNameIndex > endNoteNameIndex;
             if (reachedEndNote) break;
-
             const noteName = noteNames[noteNameIndex];
-            notes.push(noteName + octave);
-            if (noteName.length === 1) whiteKeys++;
+
+            const white = noteName.length === 1;
+            noteMap[noteName + octave] = { white, pressed: false, audioNode: null };
+            if (white) whiteKeys++;
 
             noteNameIndex++;
         }
     }
 
-    return { notes, whiteKeys };
+    return { noteMap, whiteKeys };
 }
 
 export function midiToNote(midiNote: number) {
