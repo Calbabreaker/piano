@@ -28,6 +28,7 @@
         noteMap[note].pressed = true;
 
         if (panelData.instrument) {
+            stopAudioNode(note);
             noteMap[note].audioNode = panelData.instrument.play(note, undefined, {
                 gain: panelData.volume,
             });
@@ -50,30 +51,27 @@
         }
     }
 
-    function forEachNoteMap(func: (note: string, noteObj: INote) => void) {
-        for (const key in noteMap) {
-            func(key, noteMap[key]);
+    // stop all sustain audio nodes when sustain changed
+    function sustainStop(_: boolean) {
+        for (const note in noteMap) {
+            if (!noteMap[note].pressed) {
+                stopAudioNode(note);
+            }
         }
     }
 
-    // stop all sustain audio nodes when sustain changed
-    $: (() => {
-        panelData?.sustain;
-        forEachNoteMap((note, noteObj) => {
-            if (!noteObj.pressed) stopAudioNode(note);
-        });
-    })();
-
     // unpress all pressed keys to prevent 'ghosting' when octave shifting
-    $: (() => {
-        panelData?.octaveShift;
-        forEachNoteMap((note, noteObj) => {
-            if (noteObj.pressed) {
-                noteObj.pressed = false;
+    function octaveShiftStop(_: number) {
+        for (const note in noteMap) {
+            if (noteMap[note].pressed) {
+                noteMap[note].pressed = false;
                 stopAudioNode(note);
             }
-        });
-    })();
+        }
+    }
+
+    $: (() => sustainStop(panelData?.sustain))();
+    $: (() => octaveShiftStop(panelData?.octaveShift))();
 
     window.addEventListener("keydown", (event) => {
         const note = keyBinds[event.code];

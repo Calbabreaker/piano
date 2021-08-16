@@ -7,7 +7,7 @@ Note that the backend server is not enabled.
 
 ## Structure
 
-The project is seperated into two folders `frontend/` and `backend/`.
+The project is seperated into two folders [frontend]("./frontend/") and [backend]("./backend/").
 
 The frontend stuff will contain the piano frontend and it will contact the specified backend 
 server for websockets and stuff. This can just be hosted somewhere statically able to serve files.

@@ -19,7 +19,16 @@
     export let data: IControlPanelData = { volume: 25, sustain: false, octaveShift: 0 };
 
     let instrumentName: InstrumentName = "acoustic_grand_piano";
-    $: instrumentPromise = Soundfont.instrument(audioContext, instrumentName);
+
+    const instrumentCache: { [key: string]: Promise<Soundfont.Player> } = {};
+    function getInstrument(name: InstrumentName): Promise<Soundfont.Player> {
+        if (!instrumentCache[name])
+            instrumentCache[name] = Soundfont.instrument(audioContext, instrumentName);
+
+        return instrumentCache[name];
+    }
+
+    $: instrumentPromise = getInstrument(instrumentName);
     $: (async () => (data.instrument = await instrumentPromise))();
 
     window.addEventListener("keydown", (event) => {
