@@ -12,11 +12,13 @@
     import { instrumentNames } from "./instrument_names";
     import type { InstrumentName } from "./instrument_names";
     import * as Soundfont from "soundfont-player";
+    import type { MidiPlayer } from "./midi_player";
 
     const audioContext = new AudioContext();
 
     // make the data an object for less repeativeness
     export let data: IControlPanelData = { volume: 25, sustain: false, octaveShift: 0 };
+    export let midiPlayer: MidiPlayer;
 
     let instrumentName: InstrumentName = "acoustic_grand_piano";
 
@@ -40,6 +42,16 @@
         if (data.octaveShift < -3) data.octaveShift = 3;
         else if (data.octaveShift > 3) data.octaveShift = -3;
     });
+
+    function onFileChanged(event: Event) {
+        const inputElm = event.target as HTMLInputElement;
+        midiPlayer.setMidiFile(inputElm.files?.[0]);
+    }
+
+    function updateMidiPlaying(func: () => void) {
+        func.bind(midiPlayer)();
+        midiPlayer.midiPlaying = midiPlayer.midiPlaying;
+    }
 </script>
 
 <div class="control-panel">
@@ -67,6 +79,16 @@
             loading...
         {/await}
     </div>
+
+    <div>
+        <p>Play a midi:</p>
+        <input type="file" on:change={onFileChanged} /><br />
+        {#if midiPlayer.midiPlaying}
+            <button on:click={() => updateMidiPlaying(midiPlayer.pause)}>Stop</button>
+        {:else}
+            <button on:click={() => updateMidiPlaying(midiPlayer.resume)}>Play</button>
+        {/if}
+    </div>
 </div>
 
 <style>
@@ -74,8 +96,6 @@
         background-color: black;
         color: white;
         padding: 10px;
-        display: flex;
-        flex-direction: column;
     }
 
     input[type="range"] {

@@ -1,7 +1,7 @@
 <script lang="ts">
     import ControlPanel from "./ControlPanel.svelte";
     import type { IControlPanelData } from "./ControlPanel.svelte";
-    import type { INote } from "./notes";
+    import { MidiPlayer } from "./midi_player";
     import { generateNoteMapFromRange, getNoteName, getOctave, keyBinds } from "./notes";
 
     export let startNote: string;
@@ -21,7 +21,7 @@
         }
     }
 
-    function playNote(note: string, includeShift: boolean = true) {
+    function playNote(note: string, velocity: number = 1, includeShift: boolean = true) {
         note = getRealNote(note, includeShift);
 
         if (!noteMap[note] || noteMap[note].pressed) return;
@@ -30,7 +30,7 @@
         if (panelData.instrument) {
             stopAudioNode(note);
             noteMap[note].audioNode = panelData.instrument.play(note, undefined, {
-                gain: panelData.volume,
+                gain: panelData.volume * velocity,
             });
         }
     }
@@ -50,6 +50,8 @@
             noteMap[note].audioNode = null;
         }
     }
+
+    let midiPlayer = new MidiPlayer(playNote, stopNote);
 
     // stop all sustain audio nodes when sustain changed
     function sustainStop(_: boolean) {
@@ -88,7 +90,7 @@
     });
 </script>
 
-<ControlPanel bind:data={panelData} />
+<ControlPanel bind:data={panelData} {midiPlayer} />
 <div
     class="piano"
     style="--white-keys: {whiteKeys}"
@@ -100,9 +102,9 @@
         <div
             class="key {white ? 'white' : 'black'}"
             class:pressed
-            on:mousedown={() => playNote(note, false)}
+            on:mousedown={() => playNote(note, undefined, false)}
             on:mouseenter={() => {
-                if (mouseDown) playNote(note, false);
+                if (mouseDown) playNote(note, undefined, false);
             }}
             on:mouseout={() => stopNote(note, false)}
             on:mouseup={() => stopNote(note, false)}
