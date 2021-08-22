@@ -12,13 +12,7 @@
     import { instrumentNames } from "./instrument_names";
     import type { InstrumentName } from "./instrument_names";
     import * as Soundfont from "soundfont-player";
-    import {
-        midiCurrentTime,
-        midiTotalTime,
-        midiPlaying,
-        midiFile,
-        midiIntervalToSecond,
-    } from "./midi_player";
+    import { midiCurrentTime, midiTotalTime, midiPlaying, midiFile } from "./midi_player";
 
     const audioContext = new AudioContext();
 
@@ -92,7 +86,7 @@
             type="range"
             min="0"
             max={$midiTotalTime}
-            step={midiIntervalToSecond}
+            step="0.1"
             bind:value={$midiCurrentTime}
             on:mousedown={() => ($midiPlaying = false)}
             on:mouseup={() => ($midiPlaying = true)}
