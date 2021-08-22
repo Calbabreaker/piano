@@ -1,24 +1,26 @@
 <script lang="ts" context="module">
     import type { Player } from "soundfont-player";
-    export interface IControlPanelData {
-        instrument?: Player;
-        octaveShift: number;
-        sustain: boolean;
-        volume: number;
-    }
+    import { writable } from "svelte/store";
+
+    export const instrument = writable<Player>(undefined);
+    export const octaveShift = writable<number>(0);
+    export const sustain = writable<boolean>(false);
+    export const volume = writable<number>(25);
 </script>
 
 <script lang="ts">
     import { instrumentNames } from "./instrument_names";
     import type { InstrumentName } from "./instrument_names";
     import * as Soundfont from "soundfont-player";
-    import type { MidiPlayer } from "./midi_player";
+    import {
+        midiCurrentTime,
+        midiTotalTime,
+        midiPlaying,
+        midiFile,
+        midiIntervalToSecond,
+    } from "./midi_player";
 
     const audioContext = new AudioContext();
-
-    // make the data an object for less repeativeness
-    export let data: IControlPanelData = { volume: 25, sustain: false, octaveShift: 0 };
-    export let midiPlayer: MidiPlayer;
 
     let instrumentName: InstrumentName = "acoustic_grand_piano";
 
@@ -31,42 +33,37 @@
     }
 
     $: instrumentPromise = getInstrument(instrumentName);
-    $: (async () => (data.instrument = await instrumentPromise))();
+    $: (async () => ($instrument = await instrumentPromise))();
 
     window.addEventListener("keydown", (event) => {
-        if (event.code == "Space") data.sustain = !data.sustain;
+        if (event.code === "Space") $sustain = !$sustain;
 
-        if (event.code === "ControlLeft") data.octaveShift -= 1;
-        else if (event.code === "AltLeft") data.octaveShift += 1;
+        if (event.code === "ControlLeft") $octaveShift -= 1;
+        else if (event.code === "AltLeft") $octaveShift += 1;
 
-        if (data.octaveShift < -3) data.octaveShift = 3;
-        else if (data.octaveShift > 3) data.octaveShift = -3;
+        if ($octaveShift < -3) $octaveShift = 3;
+        else if ($octaveShift > 3) $octaveShift = -3;
     });
 
     function onFileChanged(event: Event) {
         const inputElm = event.target as HTMLInputElement;
-        midiPlayer.setMidiFile(inputElm.files?.[0]);
-    }
-
-    function updateMidiPlaying(func: () => void) {
-        func.bind(midiPlayer)();
-        midiPlayer.midiPlaying = midiPlayer.midiPlaying;
+        $midiFile = inputElm.files?.[0];
     }
 </script>
 
 <div class="control-panel">
     <div>
         Sustain (space):
-        <input type="checkbox" bind:checked={data.sustain} />
+        <input type="checkbox" bind:checked={$sustain} />
     </div>
     <div>
         Octave Shift (- ctrl, + alt):
-        <input type="number" min="-3" max="3" bind:value={data.octaveShift} />
+        <input type="number" min="-3" max="3" bind:value={$octaveShift} />
     </div>
     <div>
         Volume:
-        <input type="range" min="0" max="50" step="0.1" bind:value={data.volume} />
-        <input type="number" bind:value={data.volume} />
+        <input type="range" min="0" max="50" step="0.1" bind:value={$volume} />
+        <input type="number" bind:value={$volume} />
     </div>
     <div>
         Instrument:
@@ -82,12 +79,26 @@
 
     <div>
         <p>Play a midi:</p>
-        <input type="file" on:change={onFileChanged} /><br />
-        {#if midiPlayer.midiPlaying}
-            <button on:click={() => updateMidiPlaying(midiPlayer.pause)}>Stop</button>
+        <input type="file" on:change={onFileChanged} />
+        <br />
+
+        {#if $midiPlaying}
+            <button on:click={() => ($midiPlaying = false)}>Stop</button>
         {:else}
-            <button on:click={() => updateMidiPlaying(midiPlayer.resume)}>Play</button>
+            <button on:click={() => ($midiPlaying = true)}>Play</button>
         {/if}
+        <br />
+        <input
+            type="range"
+            min="0"
+            max={$midiTotalTime}
+            step={midiIntervalToSecond}
+            bind:value={$midiCurrentTime}
+            on:mousedown={() => ($midiPlaying = false)}
+            on:mouseup={() => ($midiPlaying = true)}
+            style="width: 20rem"
+        />
+        {$midiCurrentTime.toFixed(1)}/{$midiTotalTime.toFixed(1)} seconds
     </div>
 </div>
 

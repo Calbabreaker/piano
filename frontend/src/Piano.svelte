@@ -1,20 +1,18 @@
 <script lang="ts">
-    import ControlPanel from "./ControlPanel.svelte";
-    import type { IControlPanelData } from "./ControlPanel.svelte";
-    import { MidiPlayer } from "./midi_player";
+    import { instrument, octaveShift, volume, sustain } from "./ControlPanel.svelte";
+    import { midiPlayerSetup } from "./midi_player";
     import { generateNoteMapFromRange, getNoteName, getOctave, keyBinds } from "./notes";
 
     export let startNote: string;
     export let endNote: string;
 
     let mouseDown: boolean = false;
-    let panelData: IControlPanelData;
 
     const { noteMap, whiteKeys } = generateNoteMapFromRange(startNote, endNote);
 
     function getRealNote(note: string, includeShift: boolean): string {
         if (includeShift) {
-            const octave = getOctave(note) + panelData.octaveShift;
+            const octave = getOctave(note) + $octaveShift;
             return getNoteName(note) + octave;
         } else {
             return note;
@@ -27,10 +25,10 @@
         if (!noteMap[note] || noteMap[note].pressed) return;
         noteMap[note].pressed = true;
 
-        if (panelData.instrument) {
+        if ($instrument) {
             stopAudioNode(note);
-            noteMap[note].audioNode = panelData.instrument.play(note, undefined, {
-                gain: panelData.volume * velocity,
+            noteMap[note].audioNode = $instrument.play(note, undefined, {
+                gain: $volume * velocity,
             });
         }
     }
@@ -41,39 +39,36 @@
         if (!noteMap[note]) return;
         noteMap[note].pressed = false;
 
-        stopAudioNode(note);
+        if (!$sustain) stopAudioNode(note);
     }
 
+    midiPlayerSetup(playNote, stopNote);
+
     function stopAudioNode(note: string) {
-        if (!panelData?.sustain && noteMap[note].audioNode) {
+        if (noteMap[note].audioNode) {
             noteMap[note].audioNode.stop();
             noteMap[note].audioNode = null;
         }
     }
 
-    let midiPlayer = new MidiPlayer(playNote, stopNote);
-
     // stop all sustain audio nodes when sustain changed
-    function sustainStop(_: boolean) {
+    sustain.subscribe(() => {
         for (const note in noteMap) {
             if (!noteMap[note].pressed) {
                 stopAudioNode(note);
             }
         }
-    }
+    });
 
     // unpress all pressed keys to prevent 'ghosting' when octave shifting
-    function octaveShiftStop(_: number) {
+    octaveShift.subscribe(() => {
         for (const note in noteMap) {
             if (noteMap[note].pressed) {
                 noteMap[note].pressed = false;
-                stopAudioNode(note);
+                if (!$sustain) stopAudioNode(note);
             }
         }
-    }
-
-    $: (() => sustainStop(panelData?.sustain))();
-    $: (() => octaveShiftStop(panelData?.octaveShift))();
+    });
 
     window.addEventListener("keydown", (event) => {
         const note = keyBinds[event.code];
@@ -90,7 +85,6 @@
     });
 </script>
 
-<ControlPanel bind:data={panelData} {midiPlayer} />
 <div
     class="piano"
     style="--white-keys: {whiteKeys}"

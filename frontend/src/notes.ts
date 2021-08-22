@@ -1,49 +1,49 @@
-export const noteNames = ["C", "D#", "D", "E#", "E", "F", "G#", "G", "A#", "A", "B#", "B"];
+export const noteNames = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
 
 export const keyBinds: { [key: string]: string | undefined } = {
-    Backquote: "B#2",
+    Backquote: "A#2",
     Tab: "B2",
     KeyQ: "C3",
-    Digit2: "D#3",
+    Digit2: "C#3",
     KeyW: "D3",
-    Digit3: "E#3",
+    Digit3: "D#3",
     KeyE: "E3",
     KeyR: "F3",
-    Digit5: "G#3",
+    Digit5: "F#3",
     KeyT: "G3",
-    Digit6: "A#3",
+    Digit6: "G#3",
     KeyY: "A3",
-    Digit7: "B#3",
+    Digit7: "A#3",
     KeyU: "B3",
     KeyI: "C4",
-    Digit9: "D#4",
+    Digit9: "C#4",
     KeyO: "D4",
-    Digit0: "E#4",
+    Digit0: "D#4",
     KeyP: "E4",
     BracketLeft: "F4",
-    Equal: "G#4",
+    Equal: "F#4",
     BracketRight: "G4",
-    Backspace: "A#4",
+    Backspace: "G#4",
     Backslash: "A4",
     ShiftLeft: "A4",
-    KeyA: "B#4",
+    KeyA: "A#4",
     KeyZ: "B4",
     KeyX: "C5",
-    KeyD: "D#5",
+    KeyD: "C#5",
     KeyC: "D5",
-    KeyF: "E#5",
+    KeyF: "D#5",
     KeyV: "E5",
     KeyB: "F5",
-    KeyH: "G#5",
+    KeyH: "F#5",
     KeyN: "G5",
-    KeyJ: "A#5",
+    KeyJ: "G#5",
     KeyM: "A5",
-    KeyK: "B#5",
+    KeyK: "A#5",
     Comma: "B5",
     Period: "C6",
-    Semicolon: "D#6",
+    Semicolon: "C#6",
     Slash: "D6",
-    Quote: "E#6",
+    Quote: "D#6",
     ShiftRight: "E6",
     Enter: "F6",
 };
@@ -97,10 +97,4 @@ export function generateNoteMapFromRange(
     }
 
     return { noteMap, whiteKeys };
-}
-
-export function midiToNote(midiNote: number) {
-    const octave = Math.floor(midiNote / 12) - 1;
-    const note = noteNames[midiNote % 12];
-    return note + octave;
 }
