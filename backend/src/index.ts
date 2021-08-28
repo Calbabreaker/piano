@@ -1,6 +1,12 @@
 import { Server } from "socket.io";
 import { createServer } from "http";
-import { IPlayNoteEvent, IStopNoteEvent, IClientData } from "./socket_events";
+import {
+    IPlayNoteEvent,
+    IStopNoteEvent,
+    IClientData,
+    IInstrumentChangeEvent,
+} from "./socket_events";
+import { InstrumentName } from "~../frontend/src/instrument_names";
 
 const PORT = 3000;
 const server = createServer().listen(PORT, "0.0.0.0", () => {
@@ -25,11 +31,23 @@ io.on("connection", (socket) => {
         socket.emit("client_list_recieve", connectedClients);
 
         const clientData: IClientData = {
-            colorHue: genHue(),
+            colorHue: genHue().toString(),
             socketID: socket.id,
+            instrumentName: socket.handshake.query.instrumentName as InstrumentName,
         };
         connectedClients.push(clientData);
         io.to(roomName).emit("client_connect", clientData);
+
+        socket.on("instrument_change", (event) => {
+            try {
+                const instrumentEvent = event as IInstrumentChangeEvent;
+                instrumentEvent.socketID = socket.id;
+                clientData.instrumentName = instrumentEvent.instrumentName;
+                io.to(roomName).emit("instrument_change", instrumentEvent);
+            } catch (err) {
+                socket.disconnect();
+            }
+        });
 
         socket.on("play_note", (event) => {
             try {
@@ -71,7 +89,7 @@ io.on("connection", (socket) => {
 function genHue(): number {
     let hue = Math.round(Math.random() * 360);
     // close to pressed note colour
-    if (closeTo(hue, 200)) hue = genHue();
+    if (closeTo(hue, 220)) hue = genHue();
     return hue;
 }
 

@@ -5,7 +5,7 @@
     "private": true,
     "scripts": {
         "dev": "concurrently \"tsc -w\" \"nodemon dist/index.js\"",
-        "start": "tsc && node dist/index.js"
+        "start": "tsc && node dist/backend/src/index.js"
     },
     "devDependencies": {
         "concurrently": "^6.1.0",

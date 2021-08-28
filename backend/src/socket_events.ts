@@ -1,20 +1,24 @@
-import { InstrumentName } from "./instrument_names";
+import type { InstrumentName } from "../../frontend/src/instrument_names";
 
 export interface IClientData {
-    colorHue: number;
+    colorHue: string;
     socketID: string;
+    instrumentName: InstrumentName;
 }
 
 export interface IPlayNoteEvent {
     note: string;
     volume: number;
-    instrumentName: InstrumentName;
     socketID?: string;
 }
 
 export interface IStopNoteEvent {
     note: string;
     sustain: boolean;
+    socketID?: string;
+}
+
+export interface IInstrumentChangeEvent {
     instrumentName: InstrumentName;
     socketID?: string;
 }

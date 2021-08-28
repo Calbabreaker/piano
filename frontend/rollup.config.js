@@ -6,6 +6,7 @@ import { terser } from "rollup-plugin-terser";
 import sveltePreprocess from "svelte-preprocess";
 import typescript from "@rollup/plugin-typescript";
 import css from "rollup-plugin-css-only";
+import replace from "@rollup/plugin-replace";
 
 const production = !process.env.ROLLUP_WATCH;
 
@@ -39,6 +40,10 @@ export default {
         file: "public/build/bundle.js",
     },
     plugins: [
+        replace({
+            "process.env.BACKEND_HOST": JSON.stringify(process.env.BACKEND_HOST),
+            "process.env.BACKEND_PATH": JSON.stringify(process.env.BACKEND_PATH),
+        }),
         svelte({
             preprocess: sveltePreprocess({ sourceMap: !production }),
             compilerOptions: {
