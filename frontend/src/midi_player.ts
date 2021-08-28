@@ -6,15 +6,14 @@ export const midiPlaying = writable(false);
 export const midiCurrentTime = writable(0);
 export const midiTotalTime = writable(0);
 export const midiFile = writable<File | undefined>();
+export const midiSpeed = writable(1);
 
 export function midiPlayerSetup(
     playNote: (note: string, velocity: number) => void,
     stopNote: (note: string) => void
 ) {
     let tracksIndexUpTo: number[] = [];
-    // array representing each tracks' note mapped every indexMapInterval
     let midiJSON: Midi | null = null;
-    let midiCurrentInterval: number = 0;
 
     function generatePlayInfo(readResult: ArrayBuffer) {
         midiJSON = new Midi(readResult);
@@ -58,10 +57,8 @@ export function midiPlayerSetup(
 
             const delta = midiNow - note.time;
             if (delta > 0) {
-                if (delta < 0.4) {
-                    playNote(note.name, note.velocity);
-                    setTimeout(() => stopNote(note.name), note.duration * 1000);
-                }
+                playNote(note.name, note.velocity);
+                setTimeout(() => stopNote(note.name), (note.duration * 1000) / get(midiSpeed));
 
                 tracksIndexUpTo[i]++;
             }
@@ -101,7 +98,7 @@ export function midiPlayerSetup(
             const now = performance.now();
             const delta = now - lastFrameTime;
             lastFrameTime = now;
-            update(delta / 1000);
+            update((delta / 1000) * get(midiSpeed));
             requestAnimationFrame(updateLoop);
         };
 

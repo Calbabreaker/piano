@@ -12,7 +12,13 @@
     import { instrumentNames } from "./instrument_names";
     import type { InstrumentName } from "./instrument_names";
     import * as Soundfont from "soundfont-player";
-    import { midiCurrentTime, midiTotalTime, midiPlaying, midiFile } from "./midi_player";
+    import {
+        midiCurrentTime,
+        midiTotalTime,
+        midiPlaying,
+        midiFile,
+        midiSpeed,
+    } from "./midi_player";
 
     const audioContext = new AudioContext();
 
@@ -82,6 +88,8 @@
             <button on:click={() => ($midiPlaying = true)}>Play</button>
         {/if}
         <br />
+        Speed: <input type="range" min="0.01" max="4" step="0.01" bind:value={$midiSpeed} />
+        <input type="number" min="0.01" bind:value={$midiSpeed} />times<br />
         <input
             type="range"
             min="0"
