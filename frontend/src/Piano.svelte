@@ -1,43 +1,53 @@
 <script lang="ts">
-    import { instrument, octaveShift, volume, sustain } from "./ControlPanel.svelte";
+    import { instrument, octaveShift, volume, sustain, noteRange } from "./ControlPanel.svelte";
     import { midiPlayerSetup } from "./midi_player";
     import { generateNoteMapFromRange, getNoteName, getOctave, keyBinds } from "./notes";
-
-    export let startNote: string;
-    export let endNote: string;
+    import type { INoteMap } from "./notes";
+    import type { Player } from "soundfont-player";
 
     let mouseDown: boolean = false;
 
-    const { noteMap, whiteKeys } = generateNoteMapFromRange(startNote, endNote);
+    let noteMap: INoteMap;
+    let whiteKeys: number;
 
-    function getRealNote(note: string, includeShift: boolean): string {
-        if (includeShift) {
-            const octave = getOctave(note) + $octaveShift;
-            return getNoteName(note) + octave;
-        } else {
-            return note;
-        }
+    let audioNodeMap: { [key: string]: Player | undefined } = {};
+
+    const maxKeyWidth = window.innerHeight / 1.7 / 6;
+    $: keyWidth = Math.min(maxKeyWidth, window.innerWidth / whiteKeys);
+
+    noteRange.subscribe((range) => {
+        const output = generateNoteMapFromRange(range[0], range[1]);
+        noteMap = output.noteMap;
+        whiteKeys = output.whiteKeys;
+    });
+
+    function getRealNote(note: string): string {
+        const octave = getOctave(note) + $octaveShift;
+        return getNoteName(note) + octave;
     }
 
-    function playNote(note: string, velocity: number = 1, includeShift: boolean = true) {
-        note = getRealNote(note, includeShift);
+    function playNote(note: string, velocity: number = 1) {
+        note = getRealNote(note);
 
-        if (!noteMap[note] || noteMap[note].pressed) return;
-        noteMap[note].pressed = true;
+        if (noteMap[note]) {
+            if (noteMap[note].pressed) return;
+            noteMap[note].pressed = true;
+        }
 
         if ($instrument) {
             stopAudioNode(note);
-            noteMap[note].audioNode = $instrument.play(note, undefined, {
+            audioNodeMap[note] = $instrument.play(note, undefined, {
                 gain: $volume * velocity,
             });
         }
     }
 
-    function stopNote(note: string, includeShift: boolean = true) {
-        note = getRealNote(note, includeShift);
+    function stopNote(note: string) {
+        note = getRealNote(note);
 
-        if (!noteMap[note]) return;
-        noteMap[note].pressed = false;
+        if (noteMap[note]) {
+            noteMap[note].pressed = false;
+        }
 
         if (!$sustain) stopAudioNode(note);
     }
@@ -45,9 +55,9 @@
     midiPlayerSetup(playNote, stopNote);
 
     function stopAudioNode(note: string) {
-        if (noteMap[note].audioNode) {
-            noteMap[note].audioNode.stop();
-            noteMap[note].audioNode = null;
+        if (audioNodeMap[note]) {
+            audioNodeMap[note].stop();
+            audioNodeMap[note] = undefined;
         }
     }
 
@@ -87,30 +97,31 @@
 
 <div
     class="piano"
-    style="--white-keys: {whiteKeys}"
-    on:mousedown={() => (mouseDown = true)}
-    on:mouseup={() => (mouseDown = false)}
+    style={`--white-key-width: ${keyWidth}px`}
+    on:pointerdown={() => (mouseDown = true)}
+    on:pointerup={() => (mouseDown = false)}
 >
     {#each Object.entries(noteMap) as [note, { pressed, white }]}
-        <!-- svelte-ignore a11y-mouse-events-have-key-events -->
         <div
             class="key {white ? 'white' : 'black'}"
             class:pressed
-            on:mousedown={() => playNote(note, undefined, false)}
-            on:mouseenter={() => {
-                if (mouseDown) playNote(note, undefined, false);
+            on:pointerdown={(event) => {
+                event.currentTarget.releasePointerCapture(event.pointerId);
+                playNote(note);
             }}
-            on:mouseout={() => stopNote(note, false)}
-            on:mouseup={() => stopNote(note, false)}
+            on:pointerenter={() => {
+                if (mouseDown) playNote(note);
+            }}
+            on:pointerleave={() => stopNote(note)}
+            on:pointerup={() => stopNote(note)}
         />
     {/each}
 </div>
 
 <style>
     .piano {
-        --white-keys: 0;
+        --white-key-width: 0;
         display: flex;
-        align-self: flex-end;
     }
 
     .key {
@@ -135,13 +146,13 @@
     }
 
     .white {
-        --width: calc(100vw / var(--white-keys));
+        --width: var(--white-key-width);
         background-color: white;
         border: 1px solid #333;
     }
 
     .black {
-        --width: calc(100vw / var(--white-keys) / 1.6666);
+        --width: calc(var(--white-key-width) / 1.6666);
         background-color: rgb(26, 26, 26);
         margin-left: calc(var(--width) / -2);
         margin-right: calc(var(--width) / -2);

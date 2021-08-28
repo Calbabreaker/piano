@@ -4,6 +4,6 @@
 </script>
 
 <main>
-    <ControlPanel/>
-    <Piano startNote="A0" endNote="C8" />
+    <ControlPanel />
+    <Piano />
 </main>

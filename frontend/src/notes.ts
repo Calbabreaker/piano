@@ -25,27 +25,27 @@ export const keyBinds: { [key: string]: string | undefined } = {
     BracketRight: "G4",
     Backspace: "G#4",
     Backslash: "A4",
-    ShiftLeft: "A4",
-    KeyA: "A#4",
-    KeyZ: "B4",
-    KeyX: "C5",
-    KeyD: "C#5",
-    KeyC: "D5",
-    KeyF: "D#5",
-    KeyV: "E5",
-    KeyB: "F5",
-    KeyH: "F#5",
-    KeyN: "G5",
-    KeyJ: "G#5",
-    KeyM: "A5",
-    KeyK: "A#5",
-    Comma: "B5",
-    Period: "C6",
-    Semicolon: "C#6",
-    Slash: "D6",
-    Quote: "D#6",
-    ShiftRight: "E6",
-    Enter: "F6",
+    CapsLock: "A#4",
+    ShiftLeft: "B4",
+    KeyZ: "C5",
+    KeyS: "C#5",
+    KeyX: "D5",
+    KeyD: "D#5",
+    KeyC: "E5",
+    KeyV: "F5",
+    KeyG: "F#5",
+    KeyB: "G5",
+    KeyH: "G#5",
+    KeyN: "A5",
+    KeyJ: "A#5",
+    KeyM: "B5",
+    Comma: "C6",
+    KeyL: "C#6",
+    Period: "D6",
+    Semicolon: "D#6",
+    Slash: "E6",
+    ShiftRight: "F6",
+    Enter: "F#6",
 };
 
 export function getOctave(note: string): number {
@@ -64,7 +64,7 @@ export interface INote {
     audioNode: Player | null;
 }
 
-type INoteMap = { [key: string]: INote | undefined };
+export type INoteMap = { [key: string]: INote | undefined };
 
 export function generateNoteMapFromRange(
     startNote: string,
