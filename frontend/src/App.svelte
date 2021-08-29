@@ -7,3 +7,11 @@
     <ControlPanel />
     <Piano />
 </main>
+
+<style>
+    main {
+        height: 100%;
+        display: flex;
+        flex-flow: column;
+    }
+</style>

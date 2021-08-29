@@ -56,12 +56,10 @@ export function getNoteName(note: string): string {
     return note.substring(0, note.length - 1);
 }
 
-import type { Player } from "soundfont-player";
-
 export interface INote {
     white: boolean;
-    audioNode: Player | null;
     pressedColor: string | null;
+    ghost: boolean;
 }
 
 export type INoteMap = { [key: string]: INote | undefined };
@@ -91,8 +89,8 @@ export function generateNoteMapFromRange(
             const white = noteName.length === 1;
             noteMap[noteName + octave] = {
                 white,
-                audioNode: null,
                 pressedColor: null,
+                ghost: false,
             };
             if (white) whiteKeys++;
 

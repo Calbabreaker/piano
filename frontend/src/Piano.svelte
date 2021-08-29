@@ -4,21 +4,20 @@
     import { generateNoteMapFromRange, getNoteName, getOctave, keyBinds } from "./notes";
     import type { INoteMap } from "./notes";
     import type { Player } from "soundfont-player";
-    import type { IThread } from "./socket_player";
-    import { socketSetup, socketPlayNote, socketStopNote } from "./socket_player";
+    import {
+        socketSetup,
+        socketPlayNote,
+        socketStopNote,
+        originalThread,
+        threadMap,
+    } from "./socket_player";
     import type { IPlayNoteEvent, IStopNoteEvent } from "../../backend/src/socket_events";
 
     let mouseDown: boolean = false;
 
     let noteMap: INoteMap;
     let whiteKeys: number;
-
-    // audioNodes are seperate 'threads' but the noteMap isn't
-    let threadMap = new Map<string, IThread>();
-    // we need to keep this around to stop note sound correctly
-    let thisAudioNodeMap = new Map<string, Player>();
-    // default thread is 0
-    threadMap.set("0", { audioNodeMap: thisAudioNodeMap, colorHue: "220" });
+    let pianoContainer: HTMLDivElement;
 
     noteRange.subscribe((range) => {
         const output = generateNoteMapFromRange(range[0], range[1]);
@@ -26,44 +25,53 @@
         whiteKeys = output.whiteKeys;
     });
 
-    function getRealNote(note: string): string {
-        const octave = getOctave(note) + $octaveShift;
-        return getNoteName(note) + octave;
-    }
-
     function playNoteEvent(event: IPlayNoteEvent) {
-        const note = getRealNote(event.note);
         const thread = threadMap.get(event.socketID ?? "0");
 
-        if (noteMap[note]) noteMap[note].pressedColor = thread.colorHue;
+        if (noteMap[event.note]) noteMap[event.note].pressedColor = thread.colorHue;
+        thread.pressedMap.set(event.note, true);
 
         if (!thread.instrument) return;
-        stopAudioNode(note, thread.audioNodeMap);
+        stopAudioNode(event.note, thread.audioNodeMap);
         thread.audioNodeMap.set(
-            note,
-            thread.instrument.play(note, undefined, {
+            event.note,
+            thread.instrument.play(event.note, undefined, {
                 gain: event.volume,
             })
         );
     }
 
     function stopNoteEvent(event: IStopNoteEvent) {
-        const note = getRealNote(event.note);
         const thread = threadMap.get(event.socketID ?? "0");
 
-        if (noteMap[note]) noteMap[note].pressedColor = null;
+        if (noteMap[event.note] && thread.pressedMap.get(event.note))
+            noteMap[event.note].pressedColor = null;
 
-        if (!event.sustain) stopAudioNode(note, thread.audioNodeMap);
+        thread.pressedMap.delete(event.note);
+        if (!event.sustain) {
+            stopAudioNode(event.note, thread.audioNodeMap);
+        }
     }
 
-    socketSetup(playNoteEvent, stopNoteEvent, threadMap);
+    socketSetup(playNoteEvent, stopNoteEvent);
+
+    function getRealNote(note: string): string {
+        const octave = getOctave(note) + $octaveShift;
+        return getNoteName(note) + octave;
+    }
 
     function playNote(note: string) {
-        socketPlayNote(note, $volume);
+        const realNote = getRealNote(note);
+        if (originalThread.pressedMap.get(realNote)) return;
+        if (noteMap[note]) noteMap[note].ghost = true;
+
+        socketPlayNote(realNote, $volume);
     }
 
     function stopNote(note: string) {
-        socketStopNote(note, $sustain);
+        const realNote = getRealNote(note);
+        if (noteMap[note]) noteMap[note].ghost = false;
+        socketStopNote(realNote, $sustain);
     }
 
     midiPlayerSetup(playNote, stopNote);
@@ -76,67 +84,83 @@
     }
 
     // stop all sustain audio nodes when sustain changed
-    sustain.subscribe(() => {
-        for (const note in noteMap) {
-            if (!noteMap[note].pressedColor) {
-                stopAudioNode(note, thisAudioNodeMap);
+    sustain.subscribe((sustain) => {
+        if (sustain) return;
+        for (const note of originalThread.audioNodeMap.keys()) {
+            if (!originalThread.pressedMap.get(note)) {
+                socketStopNote(note, false);
             }
         }
     });
 
     // unpress all pressed keys to prevent 'ghosting' when octave shifting
     octaveShift.subscribe(() => {
-        for (const note in noteMap) {
-            if (noteMap[note].pressedColor) {
-                noteMap[note].pressedColor = null;
-                if (!$sustain) stopAudioNode(note, thisAudioNodeMap);
-            }
+        for (const note of originalThread.pressedMap.keys()) {
+            socketStopNote(note, $sustain);
         }
     });
 
-    window.addEventListener("keydown", (event) => {
+    function recalcWidth() {
+        if (!pianoContainer) return;
+        const maxWidth = pianoContainer.clientHeight / 6;
+        const width = pianoContainer.offsetWidth / whiteKeys;
+        pianoContainer.style.setProperty("--white-key-width", `${Math.min(width, maxWidth)}px`);
+    }
+
+    // @ts-ignore
+    $: recalcWidth(whiteKeys);
+
+    function onKeyDown(event: KeyboardEvent) {
         const note = keyBinds[event.code];
         const target = event.target as HTMLElement;
         if (note && target.tagName !== "INPUT") {
             event.preventDefault();
             playNote(note);
         }
-    });
+    }
 
-    window.addEventListener("keyup", (event) => {
+    function onKeyup(event: KeyboardEvent) {
         const note = keyBinds[event.code];
         if (note) stopNote(note);
-    });
+    }
 </script>
 
-<div
-    class="piano"
-    style={`--white-keys: ${whiteKeys}`}
+<svelte:window
+    on:resize={recalcWidth}
+    on:load={recalcWidth}
+    on:keyup={onKeyup}
+    on:keydown={onKeyDown}
     on:pointerdown={() => (mouseDown = true)}
     on:pointerup={() => (mouseDown = false)}
->
-    {#each Object.entries(noteMap) as [note, { white, pressedColor }]}
-        <div
-            class="key {white ? 'white' : 'black'}"
-            class:pressed={pressedColor ? true : false}
-            on:pointerdown={(event) => {
-                event.currentTarget.releasePointerCapture(event.pointerId);
-                playNote(note);
-            }}
-            on:pointerenter={() => {
-                if (mouseDown) playNote(note);
-            }}
-            on:pointerleave={() => stopNote(note)}
-            on:pointerup={() => stopNote(note)}
-            style={`--color-hue: ${pressedColor}`}
-        />
-    {/each}
+/>
+<div class="piano-container" bind:this={pianoContainer}>
+    <div class="piano" style={`--white-keys: ${whiteKeys}`} on:touchend|preventDefault>
+        {#each Object.entries(noteMap) as [note, { white, pressedColor, ghost }]}
+            <div
+                class="key {white ? 'white' : 'black'}"
+                class:pressed={pressedColor === null ? false : true}
+                class:ghost={ghost && pressedColor === null}
+                on:pointerdown={(event) => {
+                    event.currentTarget.releasePointerCapture(event.pointerId);
+                    playNote(note);
+                }}
+                on:pointerenter={() => {
+                    if (mouseDown) playNote(note);
+                }}
+                on:pointerleave={() => stopNote(note)}
+                on:pointerup={() => stopNote(note)}
+                style={`--color-hue: ${pressedColor}`}
+            />
+        {/each}
+    </div>
 </div>
 
 <style>
+    .piano-container {
+        height: 100%;
+    }
+
     .piano {
-        --white-keys: 0;
-        --white-key-width: min(calc(100vw / var(--white-keys)), calc(60vh / 6));
         display: flex;
     }
 
@@ -158,6 +182,11 @@
         border: hsl(var(--color-hue), 70%, 40%) solid 2px !important;
         transform: translateY(2.5%);
         box-shadow: 0px 0px 1px rgba(32, 32, 32, 0.2);
+    }
+
+    .ghost {
+        background-color: hsl(0, 0%, 25%) !important;
+        border: hsl(0, 0%, 20%) solid 2px !important;
     }
 
     .white {

@@ -1,6 +1,6 @@
 import type { Socket } from "socket.io-client";
-import * as Soundfont from "soundfont-player";
 import { io } from "socket.io-client";
+import type { Player } from "soundfont-player";
 import { writable, get } from "svelte/store";
 import type {
     IClientData,
@@ -9,33 +9,31 @@ import type {
     IInstrumentChangeEvent,
 } from "../../backend/src/socket_events";
 import type { InstrumentName } from "./instrument_names";
+import { getInstrument } from "./utils";
 
 export interface IThread {
-    audioNodeMap: Map<string, Soundfont.Player>;
-    instrument?: Soundfont.Player;
+    audioNodeMap: Map<string, Player>;
+    pressedMap: Map<string, boolean>;
+    instrument?: Player;
     colorHue: string;
 }
 
 export const socketPromise = writable<Promise<void> | undefined>();
 export const instrumentName = writable<InstrumentName>("acoustic_grand_piano");
+export const connectedColorHues = writable<Map<string, string> | null>(null);
 
-let socket: Socket | undefined;
+export const threadMap = new Map<string, IThread>();
+// "0" is the threadID while playing offline
+export const originalThread: IThread = {
+    pressedMap: new Map(),
+    audioNodeMap: new Map(),
+    colorHue: "220",
+};
+threadMap.set("0", originalThread);
+
+export let socket: Socket | null;
 let playNote: (event: IPlayNoteEvent) => void;
 let stopNote: (event: IStopNoteEvent) => void;
-let threadMap: Map<string, IThread>;
-
-const AudioContext = window.AudioContext || window.webkitAudioContext;
-if (!AudioContext) alert("Your browser does not seem to support the Web Audio API!");
-const audioContext = new AudioContext();
-const instrumentCache: { [key: string]: Promise<Soundfont.Player> } = {};
-
-export function getInstrument(name: InstrumentName): Promise<Soundfont.Player> {
-    if (!instrumentCache[name]) {
-        instrumentCache[name] = Soundfont.instrument(audioContext, name);
-    }
-
-    return instrumentCache[name];
-}
 
 function loadInstrument(instrumentName: InstrumentName, threadID: string) {
     getInstrument(instrumentName).then((instrument) => {
@@ -43,18 +41,28 @@ function loadInstrument(instrumentName: InstrumentName, threadID: string) {
     });
 }
 
-export function socketSetup(
-    playNoteParam: typeof playNote,
-    stopNoteParam: typeof stopNote,
-    threadMapParam: typeof threadMap
-) {
+function addThread({ socketID, colorHue, instrumentName }: IClientData) {
+    // keep the audioNodeMap the same in order for Piano
+    // component to stop notes correctly
+    threadMap.set(socketID, {
+        audioNodeMap: socketID === socket.id ? originalThread.audioNodeMap : new Map(),
+        pressedMap: socketID === socket.id ? originalThread.pressedMap : new Map(),
+        colorHue,
+    });
+
+    if (get(connectedColorHues) !== null)
+        connectedColorHues.set(get(connectedColorHues).set(socketID, colorHue));
+
+    if (instrumentName) loadInstrument(instrumentName, socketID);
+}
+
+export function socketSetup(playNoteParam: typeof playNote, stopNoteParam: typeof stopNote) {
     playNote = playNoteParam;
     stopNote = stopNoteParam;
-    threadMap = threadMapParam;
 }
 
 export function socketConnect(roomName: string) {
-    const promise = new Promise((resolve, reject) => {
+    const promise = new Promise<void>((resolve, reject) => {
         const BACKEND_HOST = process.env.BACKEND_HOST;
         if (!BACKEND_HOST) return reject("No backend server was specified in build!");
 
@@ -63,22 +71,20 @@ export function socketConnect(roomName: string) {
             path: process.env.BACKEND_PATH,
         });
 
-        let originalThread: IThread;
-        let thisAudioNodeMap: Map<string, Soundfont.Player> | undefined;
-
-        if (threadMap.has("0")) {
-            originalThread = threadMap.get("0");
-            thisAudioNodeMap = originalThread.audioNodeMap;
-        }
+        socket.on("connect_error", () => reject("Failed to connect to server!"));
+        socket.on("connect_timeout", () => reject("Timed out while connecting to server!"));
 
         socket.on("connect", () => {
             threadMap.delete("0");
-            resolve(socket!);
+            connectedColorHues.set(new Map());
+            resolve();
         });
 
         socket.on("disconnect", () => {
+            connectedColorHues.set(null);
             threadMap.clear();
             threadMap.set("0", originalThread);
+            socket = null;
         });
 
         socket.on("play_note", (event) => {
@@ -95,17 +101,6 @@ export function socketConnect(roomName: string) {
             loadInstrument(instrumentName, socketID);
         });
 
-        function addThread({ socketID, colorHue, instrumentName }: IClientData) {
-            threadMap.set(socketID, {
-                audioNodeMap: thisAudioNodeMap ? thisAudioNodeMap : new Map(),
-                colorHue,
-            });
-
-            thisAudioNodeMap = undefined;
-
-            if (instrumentName) loadInstrument(instrumentName, socketID);
-        }
-
         socket.on("client_connect", (data) => {
             addThread(data as IClientData);
         });
@@ -118,11 +113,14 @@ export function socketConnect(roomName: string) {
         });
 
         socket.on("client_disconnect", (socketID) => {
+            const colorHues = get(connectedColorHues);
+            colorHues.delete(socketID);
+            connectedColorHues.set(colorHues);
             threadMap.delete(socketID);
         });
     });
 
-    socketPromise.set(promise as Promise<void>);
+    socketPromise.set(promise);
 }
 
 export function socketPlayNote(note: string, volume: number) {

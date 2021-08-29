@@ -16,7 +16,14 @@
         midiFile,
         midiSpeed,
     } from "./midi_player";
-    import { getInstrument, instrumentName, socketConnect, socketPromise } from "./socket_player";
+    import {
+        instrumentName,
+        socketConnect,
+        socketPromise,
+        socket,
+        connectedColorHues,
+    } from "./socket_player";
+    import { getInstrument } from "./utils";
 
     let roomName = "";
 
@@ -73,8 +80,8 @@
                 <option data-range="A0,C8">Full size (88 keys)</option>
                 <option data-range="C2,C7" selected={true}>Half size (61 keys)</option>
                 <option data-range="C3,C6">Quater Size (37 keys)</option>
-                <option data-range="C4,A5">2 Octaves (24 keys)</option>
-                <option data-range="C4,A4">1 Octave (12 keys)</option>
+                <option data-range="C4,B5">2 Octaves (24 keys)</option>
+                <option data-range="C4,B4">1 Octave (12 keys)</option>
             </select>
             <br />
             <br />
@@ -114,13 +121,27 @@
     <div>
         <p>Join a room:</p>
         <input type="text" placeholder="Room name" bind:value={roomName} />
-        <button on:click={() => socketConnect(roomName)}>Join</button>
+
+        {#if $connectedColorHues !== null}
+            <button on:click={() => socket.disconnect()}>Leave</button>
+        {:else}
+            <button on:click={() => socketConnect(roomName)}>Join</button>
+        {/if}
         {#await $socketPromise}
             <span>Connecting...</span>
         {:then}
-            <span>{roomName}</span>
+            {#if $connectedColorHues !== null}
+                <span>Connected</span><br />
+                <span>People: </span>
+                {#each Array.from($connectedColorHues.entries()) as [socketID, colorHue]}
+                    <div class="icon" style={`--color-hue: ${colorHue}`} />
+                    {#if socketID === socket.id}
+                        <span style="margin: 0 0.5rem 0 0">(you)</span>
+                    {/if}
+                {/each}
+            {/if}
         {:catch error}
-            <span>{error}</span>
+            <span style="color: #fe3c3c">{error}</span>
         {/await}
     </div>
 </div>
@@ -155,5 +176,13 @@
     p {
         margin-bottom: 5px;
         margin-top: 0;
+    }
+
+    .icon {
+        display: inline-block;
+        background-color: hsl(var(--color-hue), 70%, 50%);
+        border: hsl(var(--color-hue), 70%, 40%) solid 2px;
+        width: 1rem;
+        height: 1rem;
     }
 </style>
