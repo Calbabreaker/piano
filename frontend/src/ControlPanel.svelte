@@ -136,7 +136,7 @@
                 {#each Array.from($connectedColorHues.entries()) as [socketID, colorHue]}
                     <div class="icon" style={`--color-hue: ${colorHue}`} />
                     {#if socketID === socket.id}
-                        <span style="margin: 0 0.5rem 0 0">(you)</span>
+                        <span style="margin-right: 0.5rem">(you)</span>
                     {/if}
                 {/each}
             {/if}
@@ -184,5 +184,6 @@
         border: hsl(var(--color-hue), 70%, 40%) solid 2px;
         width: 1rem;
         height: 1rem;
+        margin-bottom: -5px;
     }
 </style>
