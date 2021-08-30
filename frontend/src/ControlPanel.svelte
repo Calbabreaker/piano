@@ -29,12 +29,19 @@
 
     $: instrumentPromise = getInstrument($instrumentName);
 
+    const urlParams = new URLSearchParams(window.location.search);
+    const urlRoomName = urlParams.get("room");
+    if (urlRoomName) {
+        roomName = urlRoomName;
+        socketConnect(roomName);
+    }
+
     function sizeSelectChange(select: HTMLSelectElement) {
         const option = select.children[select.selectedIndex] as HTMLOptionElement;
         $noteRange = option.dataset["range"].split(",") as [string, string];
     }
 
-    window.addEventListener("keydown", (event) => {
+    function onKeyDown(event: KeyboardEvent) {
         if (event.code === "Space") $sustain = !$sustain;
 
         if (event.code === "ControlLeft") $octaveShift -= 1;
@@ -42,9 +49,10 @@
 
         if ($octaveShift < -3) $octaveShift = 3;
         else if ($octaveShift > 3) $octaveShift = -3;
-    });
+    }
 </script>
 
+<svelte:window on:keydown={onKeyDown} />
 <div class="control-panel">
     <div class="row">
         <div>
@@ -120,7 +128,14 @@
 
     <div>
         <p>Join a room:</p>
-        <input type="text" placeholder="Room name" bind:value={roomName} />
+        <input
+            type="text"
+            placeholder="Room name"
+            bind:value={roomName}
+            on:keydown={(event) => {
+                if (event.code === "Enter") socketConnect(roomName);
+            }}
+        />
 
         {#if $connectedColorHues !== null}
             <button on:click={() => socket.disconnect()}>Leave</button>
@@ -131,7 +146,7 @@
             <span>Connecting...</span>
         {:then}
             {#if $connectedColorHues !== null}
-                <span>Connected</span><br />
+                <span>Connected!</span><br />
                 <span>People: </span>
                 {#each Array.from($connectedColorHues.entries()) as [socketID, colorHue]}
                     <div class="icon" style={`--color-hue: ${colorHue}`} />

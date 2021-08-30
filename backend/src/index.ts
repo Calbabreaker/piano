@@ -6,7 +6,7 @@ import {
     IClientData,
     IInstrumentChangeEvent,
 } from "./socket_events";
-import { InstrumentName } from "~../frontend/src/instrument_names";
+import { InstrumentName } from "./instrument_names";
 
 const PORT = 3000;
 const server = createServer().listen(PORT, "0.0.0.0", () => {
