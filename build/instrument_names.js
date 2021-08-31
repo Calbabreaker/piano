@@ -1,4 +1,7 @@
-export const instrumentNames = [
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.instrumentNames = void 0;
+exports.instrumentNames = [
     "accordion",
     "acoustic_bass",
     "acoustic_grand_piano",
@@ -127,7 +130,4 @@ export const instrumentNames = [
     "whistle",
     "woodblock",
     "xylophone",
-] as const;
-
-type InstrumentTuple = typeof instrumentNames;
-export type InstrumentName = InstrumentTuple[number];
+];
