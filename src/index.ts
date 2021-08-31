@@ -8,7 +8,7 @@ import {
 } from "./socket_events";
 import { InstrumentName } from "./instrument_names";
 
-const PORT = 3000;
+const PORT = process.env.PORT as number | undefined ?? 3000;
 const server = createServer().listen(PORT, "0.0.0.0", () => {
     console.log(`Server running on port ${PORT}.`);
 });
