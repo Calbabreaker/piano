@@ -13,7 +13,6 @@ import { getInstrument } from "./utils";
 
 export interface IThread {
     audioNodeMap: Map<string, Player>;
-    pressedMap: Map<string, boolean>;
     instrument?: Player;
     colorHue: string;
 }
@@ -25,7 +24,6 @@ export const connectedColorHues = writable<Map<string, string> | null>(null);
 export const threadMap = new Map<string, IThread>();
 // "0" is the threadID while playing offline
 export const originalThread: IThread = {
-    pressedMap: new Map(),
     audioNodeMap: new Map(),
     colorHue: "220",
 };
@@ -46,7 +44,6 @@ function addThread({ socketID, colorHue, instrumentName }: IClientData) {
     // component to stop notes correctly
     threadMap.set(socketID, {
         audioNodeMap: socketID === socket.id ? originalThread.audioNodeMap : new Map(),
-        pressedMap: socketID === socket.id ? originalThread.pressedMap : new Map(),
         colorHue,
     });
 

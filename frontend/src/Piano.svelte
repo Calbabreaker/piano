@@ -19,6 +19,9 @@
     let whiteKeys: number;
     let pianoContainer: HTMLDivElement;
 
+    // this map allows us to know if we're locally pressing a key
+    let pressedMap = new Map<string, boolean>();
+
     noteRange.subscribe((range) => {
         const output = generateNoteMapFromRange(range[0], range[1]);
         noteMap = output.noteMap;
@@ -29,7 +32,6 @@
         const thread = threadMap.get(event.socketID ?? "0");
 
         if (noteMap[event.note]) noteMap[event.note].pressedColor = thread.colorHue;
-        thread.pressedMap.set(event.note, true);
 
         if (!thread.instrument) return;
         stopAudioNode(event.note, thread.audioNodeMap);
@@ -44,10 +46,8 @@
     function stopNoteEvent(event: IStopNoteEvent) {
         const thread = threadMap.get(event.socketID ?? "0");
 
-        if (noteMap[event.note] && thread.pressedMap.get(event.note))
-            noteMap[event.note].pressedColor = null;
+        if (noteMap[event.note]) noteMap[event.note].pressedColor = null;
 
-        thread.pressedMap.delete(event.note);
         if (!event.sustain) {
             stopAudioNode(event.note, thread.audioNodeMap);
         }
@@ -62,15 +62,19 @@
 
     function playNote(note: string) {
         const realNote = getRealNote(note);
-        if (originalThread.pressedMap.get(realNote)) return;
+        if (pressedMap.get(realNote)) return;
         if (noteMap[note]) noteMap[note].ghost = true;
 
+        pressedMap.set(realNote, true);
         socketPlayNote(realNote, $volume);
     }
 
     function stopNote(note: string) {
         const realNote = getRealNote(note);
         if (noteMap[note]) noteMap[note].ghost = false;
+        if (!pressedMap.get(realNote)) return;
+
+        pressedMap.delete(realNote);
         socketStopNote(realNote, $sustain);
     }
 
@@ -87,7 +91,7 @@
     sustain.subscribe((sustain) => {
         if (sustain) return;
         for (const note of originalThread.audioNodeMap.keys()) {
-            if (!originalThread.pressedMap.get(note)) {
+            if (!pressedMap.get(note)) {
                 socketStopNote(note, false);
             }
         }
@@ -95,7 +99,7 @@
 
     // unpress all pressed keys to prevent 'ghosting' when octave shifting
     octaveShift.subscribe(() => {
-        for (const note of originalThread.pressedMap.keys()) {
+        for (const note of pressedMap.keys()) {
             socketStopNote(note, $sustain);
         }
     });

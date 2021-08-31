@@ -4,7 +4,6 @@ A nice little piano with multiplayer support and midi playing able to be played
 with keyboard, mouse and touchscreen.
 
 Live demo at https://calbabreaker.github.io/piano.
-Note that the backend server is not enabled.
 
 ## Structure
 
