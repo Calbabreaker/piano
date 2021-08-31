@@ -1,6 +1,0 @@
-node_modules/
- 
-# parcel output
-dist/
-.parcel-cache/
-
