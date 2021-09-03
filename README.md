@@ -5,6 +5,8 @@ with keyboard, mouse and touchscreen.
 
 Live demo at https://calbabreaker.github.io/piano.
 
+![piano-screenshot](./.github/piano-screenshot.png)
+
 ## Structure
 
 The project is seperated into two folders `frontend/` and `backend/`.

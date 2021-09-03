@@ -76,7 +76,7 @@ export function socketConnect(roomName: string) {
             connectedColorHues.set(new Map());
             resolve();
 
-            history.replaceState({}, `Play Piano! - ${roomName}`, `/?room=${roomName}`);
+            history.replaceState({}, `Play Piano! - ${roomName}`, `?room=${roomName}`);
         });
 
         socket.on("disconnect", () => {
@@ -85,7 +85,7 @@ export function socketConnect(roomName: string) {
             threadMap.set("0", originalThread);
             socket = null;
 
-            history.replaceState({}, `Play Piano!`, `/`);
+            history.replaceState({}, `Play Piano!`, location.pathname);
         });
 
         socket.on("play_note", (event) => {
