@@ -1,0 +1,64 @@
+name: Building, Testing and Deployment
+
+on: [push, pull_request]
+
+jobs:
+    frontend:
+        runs-on: ubuntu-latest
+        defaults:
+            run:
+                working-directory: ./frontend
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v2
+            - name: Install dependencies
+              run: yarn
+            - name: Build
+              run: yarn build
+
+    backend:
+        runs-on: ubuntu-latest
+        defaults:
+            run:
+                working-directory: ./backend
+        steps:
+            - name: Install dependencies
+              run: yarn
+            - name: Build
+              run: yarn build
+            - name: Test run
+              run: yarn start & sleep 5; kill $!
+
+    pre-deploy:
+        needs: [frontend, backend]
+        runs-on: ubuntu-latest
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main' && github.repository_owner == 'calbabreaker'
+        defaults:
+            run:
+                working-directory: ./frontend
+        steps:
+            - name: Set backend server env
+              run: echo "BACKEND_HOST=https://piano-backend.herokuapp.com" > ./env-sample
+            - name: Build
+              run: yarn build
+
+    deploy:
+        needs: pre-deploy
+        runs-on: ubuntu-latest
+        steps:
+            - name: Push deploy-frontend
+              uses: s0/git-publish-subdir-action@develop
+              env:
+                  REPO: self
+                  BRANCH: deploy-frontend
+                  FOLDER: frontend
+                  MESSAGE: "Deploy at {sha}"
+                  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+            - name: Push deploy-backend
+              uses: s0/git-publish-subdir-action@develop
+              env:
+                  REPO: self
+                  BRANCH: deploy-backend
+                  FOLDER: backend
+                  MESSAGE: "Deploy at {sha}"
+                  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

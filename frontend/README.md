@@ -12,5 +12,6 @@ Finally, run `yarn build` to build into `public/` folder that will contain the
 static html able to be put on any file server.
 
 To set the backend server, copy the `.env-sample` file to `.env` and put the
-backend server uri after `BACKEND_SERVER=`. If the server running
-on a path set `BACKEND_PATH`.
+backend server domain/ip after `BACKEND_HOST=`. If the server running
+on a path set `BACKEND_PATH`. For example to run use the server running on
+localhost, do: `BACKEND_HOST=http://localhost:3000`
