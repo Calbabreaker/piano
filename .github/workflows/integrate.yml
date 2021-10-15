@@ -22,7 +22,7 @@ jobs:
               run: yarn start & sleep 5; kill $!
 
     deploy:
-        needs: [frontend, backend]
+        needs: build-test
         if: github.event_name == 'push' && github.ref == 'refs/heads/main' && github.repository_owner == 'Calbabreaker'
         runs-on: ubuntu-latest
         steps:
