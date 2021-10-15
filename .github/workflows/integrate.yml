@@ -14,7 +14,7 @@ jobs:
             - name: Install dependencies
               run: yarn
             - name: Set backend server env
-              run: echo "BACKEND_HOST=http://localhost:3000" > ./env
+              run: echo "BACKEND_HOST=http://localhost:3000" > ./.env
             - name: Build
               run: yarn build
 
@@ -42,7 +42,7 @@ jobs:
                 working-directory: ./frontend
         steps:
             - name: Set backend server env
-              run: echo "BACKEND_HOST=https://piano-backend.herokuapp.com" > ./env
+              run: echo "BACKEND_HOST=https://piano-backend.herokuapp.com" > ./.env
             - name: Build
               run: yarn build
 
