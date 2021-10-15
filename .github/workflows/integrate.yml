@@ -30,7 +30,7 @@ jobs:
               uses: actions/checkout@v2
             - name: Build frontend with actual server env
               working-directory: ./frontend
-              run: yarn && echo "BACKEND_HOST=https://piano-backend.herokuapp.com" > ./.env && yarn build
+              run: yarn && echo "BACKEND_HOST=https://piano-backend.herokuapp.com" > ./.env && yarn build && ls -lah
             - name: Build backend
               working-directory: ./backend
               run: yarn && yarn build && rm -fr node_modules/
