@@ -33,13 +33,13 @@ jobs:
               run: yarn && echo "BACKEND_HOST=https://piano-backend.herokuapp.com" > ./.env && yarn build
             - name: Build backend
               working-directory: ./backend
-              run: yarn && yarn build
+              run: yarn && yarn build && rm -fr node_modules/
             - name: Push deploy-frontend
               uses: s0/git-publish-subdir-action@develop
               env:
                   REPO: self
                   BRANCH: deploy-frontend
-                  FOLDER: frontend
+                  FOLDER: frontend/public
                   MESSAGE: "Deploy at {sha}"
                   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
             - name: Push deploy-backend
