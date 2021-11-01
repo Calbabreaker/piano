@@ -17,4 +17,6 @@ server for websockets and stuff. This can just be hosted somewhere statically ab
 The backend stuff will contain the backend server hosted somewhere with socket.io. This needs
 to be hosted somewhere able to run node.js (eg. Digitalocean droplet)
 
-To start developing run: `git clone https://github.com/Calbabreaker/piano --depth 1` then read the README.md on each of the folders.
+To start developing, install pnpm by doing `npm install -g pnpm` then clone the
+repo by doing `git clone https://github.com/Calbabreaker/piano --depth 1` then
+read the README.md on each of the folders.

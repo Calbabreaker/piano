@@ -4,11 +4,11 @@ This folder contains the code for the piano frontend (ui).
 
 ## Developing
 
-Run `yarn` to install dependencies.
+Run `pnpm install` to install dependencies.
 
-Then run `yarn dev` to launch watching development server.
+Then run `pnpm dev` to launch watching development server.
 
-Finally, run `yarn build` to build into `public/` folder that will contain the
+Finally, run `pnpm build` to build into `public/` folder that will contain the
 static html able to be put on any file server.
 
 To set the backend server, make a `.env` file with these contents:
