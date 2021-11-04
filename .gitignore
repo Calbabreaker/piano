@@ -1,7 +1,3 @@
+build/
 node_modules/
 .env
- 
-# parcel output
-dist/
-.parcel-cache/
-

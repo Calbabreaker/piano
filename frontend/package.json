@@ -1,19 +1,35 @@
 {
     "name": "piano-frontend",
-    "author": "Calbabreaker",
-    "license": "GPL-3",
+    "version": "1.0.0",
     "private": true,
     "scripts": {
-        "dev": "parcel src/index.html",
-        "build": "parcel build src/index.html --no-scope-hoist --public-url ."
+        "build": "env-cmd rollup -c",
+        "dev": "env-cmd rollup -c -w",
+        "start": "sirv public --no-clear -H 0.0.0.0",
+        "check": "svelte-check --tsconfig ./tsconfig.json"
     },
     "devDependencies": {
-        "@parcel/transformer-sass": "2.0.0-beta.2",
-        "parcel": "^2.0.0-beta.2"
+        "@rollup/plugin-commonjs": "^21.0.0",
+        "@rollup/plugin-node-resolve": "^13.0.5",
+        "@rollup/plugin-replace": "^3.0.0",
+        "@rollup/plugin-typescript": "^8.2.5",
+        "@tsconfig/svelte": "^2.0.1",
+        "env-cmd": "^10.1.0",
+        "rollup": "^2.58.0",
+        "rollup-plugin-css-only": "^3.1.0",
+        "rollup-plugin-livereload": "^2.0.5",
+        "rollup-plugin-svelte": "^7.1.0",
+        "rollup-plugin-terser": "^7.0.2",
+        "sirv-cli": "^1.0.14",
+        "svelte": "^3.43.2",
+        "svelte-check": "^2.2.7",
+        "svelte-preprocess": "^4.9.8",
+        "tslib": "^2.3.1",
+        "typescript": "^4.4.4"
     },
     "dependencies": {
         "@tonejs/midi": "^2.0.27",
-        "socket.io-client": "^4.1.2",
+        "socket.io-client": "^4.3.0",
         "soundfont-player": "^0.12.0"
     }
 }

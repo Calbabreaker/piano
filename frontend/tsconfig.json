@@ -1,23 +1,6 @@
 {
-    "compilerOptions": {
-        "moduleResolution": "node",
-        "target": "es6",
+    "extends": "@tsconfig/svelte/tsconfig.json",
 
-        "allowJs": true,
-        "alwaysStrict": true,
-        "noFallthroughCasesInSwitch": true,
-        "noImplicitAny": true,
-        "noImplicitReturns": true,
-        "noUnusedLocals": true,
-        "noUnusedParameters": true,
-        "strict": true,
-        "strictBindCallApply": true,
-        "strictFunctionTypes": true,
-        "strictNullChecks": true,
-        "strictPropertyInitialization": true,
-        "paths": {
-            "~*": ["./*"]
-        }
-    },
-    "include": ["src/"]
+    "include": ["src/**/*"],
+    "exclude": ["node_modules/*", "__sapper__/*", "public/*"]
 }

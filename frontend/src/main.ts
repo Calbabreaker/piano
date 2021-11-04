@@ -1,3 +1,7 @@
-import { Piano } from "./scripts/piano";
+import App from "./App.svelte";
 
-new Piano("A0", "C8");
+const app = new App({
+    target: document.body,
+});
+
+export default app;

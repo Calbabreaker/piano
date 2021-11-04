@@ -1,0 +1,20 @@
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+}
+
+body,
+html {
+    height: 100%;
+}
+
+body {
+    touch-action: none;
+    background-color: #72b9b3;
+    margin: 0;
+    overscroll-behavior: none;
+    overflow: hidden;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu,
+        Cantarell, "Helvetica Neue", sans-serif;
+}
