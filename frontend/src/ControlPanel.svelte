@@ -104,10 +104,17 @@
             <br />
 
             {#if $midiPlaying}
-                <button on:click={() => ($midiPlaying = false)}>Stop</button>
+                <button on:click={() => ($midiPlaying = false)}>Pause</button>
             {:else}
                 <button on:click={() => ($midiPlaying = true)}>Play</button>
             {/if}
+            <button on:click={() => {
+                $midiPlaying = false;
+                $midiCurrentTime = 0;
+                setTimeout(() => {
+                    $midiPlaying = true;
+                }, 100);
+            }}>Restart</button>
             <br />
 
             Speed: <input type="range" min="0.01" max="4" step="0.01" bind:value={$midiSpeed} />
