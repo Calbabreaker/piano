@@ -9,27 +9,27 @@
         "check": "svelte-check --tsconfig ./tsconfig.json"
     },
     "devDependencies": {
-        "@rollup/plugin-commonjs": "^21.0.0",
-        "@rollup/plugin-node-resolve": "^13.0.5",
-        "@rollup/plugin-replace": "^3.0.0",
-        "@rollup/plugin-typescript": "^8.2.5",
-        "@tsconfig/svelte": "^2.0.1",
+        "@rollup/plugin-commonjs": "^21.0.1",
+        "@rollup/plugin-node-resolve": "^13.1.2",
+        "@rollup/plugin-replace": "^3.0.1",
+        "@rollup/plugin-typescript": "^8.3.0",
+        "@tsconfig/svelte": "^3.0.0",
         "env-cmd": "^10.1.0",
-        "rollup": "^2.58.0",
+        "rollup": "^2.62.0",
         "rollup-plugin-css-only": "^3.1.0",
         "rollup-plugin-livereload": "^2.0.5",
         "rollup-plugin-svelte": "^7.1.0",
         "rollup-plugin-terser": "^7.0.2",
-        "sirv-cli": "^1.0.14",
-        "svelte": "^3.43.2",
-        "svelte-check": "^2.2.7",
-        "svelte-preprocess": "^4.9.8",
+        "sirv-cli": "^2.0.1",
+        "svelte": "^3.44.3",
+        "svelte-check": "^2.2.11",
+        "svelte-preprocess": "^4.10.1",
         "tslib": "^2.3.1",
-        "typescript": "^4.4.4"
+        "typescript": "^4.5.4"
     },
     "dependencies": {
         "@tonejs/midi": "^2.0.27",
-        "socket.io-client": "^4.3.0",
+        "socket.io-client": "^4.4.0",
         "soundfont-player": "^0.12.0"
     }
 }
