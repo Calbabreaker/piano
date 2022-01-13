@@ -1,15 +1,17 @@
 "use strict";
-var _a;
+var _a, _b;
 Object.defineProperty(exports, "__esModule", { value: true });
 const socket_io_1 = require("socket.io");
 const http_1 = require("http");
+const dotenv_1 = require("dotenv");
+(0, dotenv_1.config)();
 const PORT = (_a = process.env.PORT) !== null && _a !== void 0 ? _a : 3000;
 const server = (0, http_1.createServer)().listen(PORT, "0.0.0.0", () => {
     console.log(`Server running on port ${PORT}.`);
 });
 const io = new socket_io_1.Server(server, {
     cors: {
-        origin: "*",
+        origin: (_b = process.env.CORS_ALLOW) !== null && _b !== void 0 ? _b : "*",
         methods: ["GET", "POST"],
     },
 });

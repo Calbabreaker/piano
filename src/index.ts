@@ -7,6 +7,8 @@ import {
     IInstrumentChangeEvent,
 } from "./socket_events";
 import { InstrumentName } from "./instrument_names";
+import { config } from "dotenv";
+config();
 
 const PORT = (process.env.PORT as number | undefined) ?? 3000;
 const server = createServer().listen(PORT, "0.0.0.0", () => {
@@ -15,7 +17,7 @@ const server = createServer().listen(PORT, "0.0.0.0", () => {
 
 const io = new Server(server, {
     cors: {
-        origin: "*",
+        origin: process.env.CORS_ALLOW ?? "*",
         methods: ["GET", "POST"],
     },
 });
