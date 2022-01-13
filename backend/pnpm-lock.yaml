@@ -2,12 +2,14 @@ lockfileVersion: 5.3
 
 specifiers:
   concurrently: ^6.5.1
+  dotenv: ^11.0.0
   http: ^0.0.1-security
   nodemon: ^2.0.15
   socket.io: ^4.4.0
   typescript: ^4.5.4
 
 dependencies:
+  dotenv: 11.0.0
   http: 0.0.1-security
   socket.io: 4.4.0
 
@@ -304,6 +306,11 @@ packages:
     dependencies:
       is-obj: 2.0.0
     dev: true
+
+  /dotenv/11.0.0:
+    resolution: {integrity: sha512-Fp/b504Y5W+e+FpCxTFMUZ7ZEQkQYF0rx+KZtmwixJxGQbLHrhCwo3FjZgNC8vIfrSi29PABNbMoCGD9YoiXbQ==}
+    engines: {node: '>=12'}
+    dev: false
 
   /duplexer3/0.1.4:
     resolution: {integrity: sha1-7gHdHKwO08vH/b6jfcCo8c4ALOI=}

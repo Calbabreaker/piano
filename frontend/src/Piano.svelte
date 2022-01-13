@@ -189,8 +189,8 @@
     }
 
     .ghost {
-        background-color: hsl(0, 0%, 25%) !important;
-        border: hsl(0, 0%, 20%) solid 2px !important;
+        background-color: hsl(0, 0%, 80%) !important;
+        border: hsl(0, 0%, 70%) solid 2px !important;
     }
 
     .white {

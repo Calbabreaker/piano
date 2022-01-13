@@ -37,7 +37,7 @@ jobs:
               run: pnpm install && echo "BACKEND_HOST=https://piano-backend.herokuapp.com" > ./.env && pnpm build && ls -lah public
             - name: Build backend
               working-directory: ./backend
-              run: pnpm install && pnpm build && rm -fr node_modules/
+              run: pnpm install && echo "CORS_ALLOW=https://naltonsoftware.com" && pnpm build && rm -fr node_modules/
             - name: Push deploy-frontend
               uses: s0/git-publish-subdir-action@develop
               env:
