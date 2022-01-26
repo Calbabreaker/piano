@@ -14,10 +14,10 @@ static html able to be put on any file server.
 To set the backend server, make a `.env` file with these contents:
 
 ```sh
-BACKEND_HOST=
-BACKEND_PATH=
+VITE_BACKEND_HOST=
+VITE_BACKEND_PATH=
 ```
 
-Then put the server domain/ip after `BACKEND_HOST=`. If the server running
-on a path set `BACKEND_PATH` as well. For example to run use the server running on
-localhost, do: `BACKEND_HOST=http://localhost:3000`
+Then put the server domain/ip after `VITE_BACKEND_HOST=`. If the server running
+on a path set `VITE_BACKEND_PATH` as well. For example to run use the server running on
+localhost, do: `VITE_BACKEND_HOST=http://localhost:5000`

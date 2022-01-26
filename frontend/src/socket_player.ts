@@ -60,12 +60,12 @@ export function socketSetup(playNoteParam: typeof playNote, stopNoteParam: typeo
 
 export function socketConnect(roomName: string) {
     const promise = new Promise<void>((resolve, reject) => {
-        const BACKEND_HOST = process.env.BACKEND_HOST;
+        const BACKEND_HOST = import.meta.env.VITE_BACKEND_HOST;
         if (!BACKEND_HOST) return reject("No backend server was specified in build!");
 
         socket = io(BACKEND_HOST, {
             query: { roomName, instrumentName: get(instrumentName) },
-            path: process.env.BACKEND_PATH,
+            path: import.meta.env.VITE_BACKEND_PATH,
         });
 
         socket.on("connect_error", () => reject("Failed to connect to server!"));

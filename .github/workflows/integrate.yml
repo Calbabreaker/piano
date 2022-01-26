@@ -34,7 +34,7 @@ jobs:
               run: npm install -g pnpm
             - name: Build frontend with actual server env
               working-directory: ./frontend
-              run: pnpm install && echo "BACKEND_HOST=https://calbabreaker-piano-backend.herokuapp.com" > ./.env && pnpm build && ls -lah public
+              run: pnpm install && echo "VITE_BACKEND_HOST=https://calbabreaker-piano-backend.herokuapp.com" > ./.env && pnpm build
             - name: Build backend
               working-directory: ./backend
               run: pnpm install && echo "CORS_ALLOW=https://naltonsoftware.com" > ./.env && pnpm build && rm -fr node_modules/
