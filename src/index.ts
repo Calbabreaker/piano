@@ -10,7 +10,7 @@ import { InstrumentName } from "./instrument_names";
 import { config } from "dotenv";
 config();
 
-const PORT = (process.env.PORT as number | undefined) ?? 3000;
+const PORT = (process.env.PORT as number | undefined) ?? 5000;
 const server = createServer().listen(PORT, "0.0.0.0", () => {
     console.log(`Server running on port ${PORT}.`);
 });
