@@ -33,10 +33,10 @@ export let socket: Socket | null;
 let playNote: (event: IPlayNoteEvent) => void;
 let stopNote: (event: IStopNoteEvent) => void;
 
-function loadInstrument(instrumentName: InstrumentName, threadID: string) {
-    getInstrument(instrumentName).then((instrument) => {
-        threadMap.get(threadID).instrument = instrument;
-    });
+async function loadInstrument(instrumentName: InstrumentName, threadID: string) {
+    let instrument = await getInstrument(instrumentName);
+    let thread = threadMap.get(threadID);
+    if (thread) thread.instrument = instrument;
 }
 
 function addThread({ socketID, colorHue, instrumentName }: IClientData) {

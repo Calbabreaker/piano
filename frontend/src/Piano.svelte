@@ -60,13 +60,13 @@
         return getNoteName(note) + octave;
     }
 
-    function playNote(note: string) {
+    function playNote(note: string, velocity: number) {
         const realNote = getRealNote(note);
         if (pressedMap.get(realNote)) return;
         if (noteMap[note]) noteMap[note].ghost = true;
 
         pressedMap.set(realNote, true);
-        socketPlayNote(realNote, $volume);
+        socketPlayNote(realNote, $volume * velocity);
     }
 
     function stopNote(note: string) {
@@ -104,14 +104,13 @@
         }
     });
 
-    function recalcWidth() {
+    function recalcWidth(numWhiteKeys = whiteKeys) {
         if (!pianoContainer) return;
         const maxWidth = pianoContainer.clientHeight / 6;
-        const width = pianoContainer.offsetWidth / whiteKeys;
+        const width = pianoContainer.offsetWidth / numWhiteKeys;
         pianoContainer.style.setProperty("--white-key-width", `${Math.min(width, maxWidth)}px`);
     }
 
-    // @ts-ignore
     $: recalcWidth(whiteKeys);
 
     function onKeyDown(event: KeyboardEvent) {
@@ -119,7 +118,7 @@
         const target = event.target as HTMLElement;
         if (note && target.tagName !== "INPUT") {
             event.preventDefault();
-            playNote(note);
+            playNote(note, 0.5);
         }
     }
 
@@ -130,8 +129,8 @@
 </script>
 
 <svelte:window
-    on:resize={recalcWidth}
-    on:load={recalcWidth}
+    on:resize={() => recalcWidth()}
+    on:load={() => recalcWidth()}
     on:keyup={onKeyup}
     on:keydown={onKeyDown}
     on:pointerdown={() => (mouseDown = true)}
@@ -146,10 +145,10 @@
                 class:ghost={ghost && pressedColor === null}
                 on:pointerdown={(event) => {
                     event.currentTarget.releasePointerCapture(event.pointerId);
-                    playNote(note);
+                    playNote(note, 0.5);
                 }}
                 on:pointerenter={() => {
-                    if (mouseDown) playNote(note);
+                    if (mouseDown) playNote(note, 0.5);
                 }}
                 on:pointerleave={() => stopNote(note)}
                 on:pointerup={() => stopNote(note)}

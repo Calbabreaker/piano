@@ -115,8 +115,10 @@
                     setTimeout(() => {
                         $midiPlaying = true;
                     }, 100);
-                }}>Restart</button
+                }}
             >
+                Restart
+            </button>
             <br />
 
             Speed: <input type="range" min="0.01" max="4" step="0.01" bind:value={$midiSpeed} />
@@ -129,7 +131,7 @@
                 bind:value={$midiCurrentTime}
                 on:mousedown={() => ($midiPlaying = false)}
                 on:mouseup={() => ($midiPlaying = true)}
-                style="width: 20rem"
+                style="width: 18rem"
             />
             {$midiCurrentTime.toFixed(1)}/{$midiTotalTime.toFixed(1)} seconds
             <br />
@@ -196,6 +198,7 @@
 
     input {
         margin-right: 5px;
+        user-select: none;
     }
 
     p {

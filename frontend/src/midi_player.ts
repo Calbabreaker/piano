@@ -1,14 +1,14 @@
 import { Midi } from "@tonejs/midi";
 import { writable, get } from "svelte/store";
+import { midiToNote } from "./notes";
 
 export const midiPlaying = writable(false);
-// time in seconds
-export const midiCurrentTime = writable(0);
-export const midiTotalTime = writable(0);
+export const midiCurrentTime = writable(0); // time in seconds
+export const midiTotalTime = writable(0); // time in seconds
 export const midiFile = writable<File | undefined>();
 export const midiSpeed = writable(1);
 
-export function midiPlayerSetup(
+export async function midiPlayerSetup(
     playNote: (note: string, velocity: number) => void,
     stopNote: (note: string) => void
 ) {
@@ -104,4 +104,30 @@ export function midiPlayerSetup(
 
         updateLoop();
     });
+
+    function onMidiEvent(event: WebMidi.MIDIMessageEvent) {
+        const [command, key, velocity] = event.data;
+        // if (command != 258 && command != 248 && command != 254) console.log(event.data);
+        if (command > 143 && command < 160) {
+            if (velocity == 0) {
+                stopNote(midiToNote(key));
+            } else {
+                playNote(midiToNote(key), velocity / 127);
+            }
+        } else if (command > 127 && command < 144) {
+            stopNote(midiToNote(key));
+        }
+    }
+
+    let access = await navigator.requestMIDIAccess();
+    function connectDevices() {
+        access.inputs.forEach((input) => {
+            input.onmidimessage = onMidiEvent;
+        });
+    }
+
+    connectDevices();
+    access.onstatechange = () => {
+        connectDevices();
+    };
 }

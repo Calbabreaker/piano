@@ -56,6 +56,12 @@ export function getNoteName(note: string): string {
     return note.substring(0, note.length - 1);
 }
 
+export function midiToNote(midi: number): string {
+    const octave = Math.floor(midi / 12) - 1;
+    const note = noteNames[midi % 12];
+    return note + octave;
+}
+
 export interface INote {
     white: boolean;
     pressedColor: string | null;
