@@ -1,9 +1,9 @@
 # Piano
 
 A nice little piano with multiplayer support and midi playing able to be played
-with keyboard, mouse and touchscreen.
+with computer keyboards, midi keyboards, mice and touchscreens.
 
-Live demo at https://calbabreaker.github.io/piano.
+Live demo at https://naltonsoftware.com/piano.
 
 ![piano-screenshot](./.github/piano-screenshot.png)
 

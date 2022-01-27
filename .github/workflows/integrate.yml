@@ -43,7 +43,7 @@ jobs:
               env:
                   REPO: self
                   BRANCH: deploy-frontend
-                  FOLDER: frontend/public
+                  FOLDER: frontend/dist
                   MESSAGE: "Deploy at {sha}"
                   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
             - name: Push deploy-backend
