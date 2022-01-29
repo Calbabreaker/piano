@@ -177,7 +177,7 @@
     .control-panel {
         background-color: black;
         color: white;
-        padding: 10px;
+        padding: 0.5rem;
     }
 
     .row {
@@ -190,6 +190,7 @@
 
     input[type="range"] {
         width: 12rem;
+        vertical-align: middle;
     }
 
     input[type="number"] {
@@ -202,7 +203,7 @@
     }
 
     p {
-        margin-bottom: 5px;
+        margin-bottom: 0.5rem;
         margin-top: 0;
     }
 
