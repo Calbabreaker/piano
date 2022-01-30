@@ -4,6 +4,7 @@ specifiers:
   '@sveltejs/vite-plugin-svelte': ^1.0.0-next.30
   '@tonejs/midi': ^2.0.27
   '@tsconfig/svelte': ^2.0.1
+  '@types/webmidi': ^2.0.6
   socket.io-client: ^4.4.1
   soundfont-player: ^0.12.0
   svelte: ^3.44.0
@@ -21,6 +22,7 @@ dependencies:
 devDependencies:
   '@sveltejs/vite-plugin-svelte': 1.0.0-next.35_svelte@3.46.2+vite@2.7.13
   '@tsconfig/svelte': 2.0.1
+  '@types/webmidi': 2.0.6
   svelte: 3.46.2
   svelte-check: 2.3.0_svelte@3.46.2
   svelte-preprocess: 4.10.2_svelte@3.46.2+typescript@4.5.5
@@ -113,6 +115,10 @@ packages:
     resolution: {integrity: sha512-BPdoIt1lfJ6B7rw35ncdwBZrAssjcwzI5LByIrYs+tpXlj/CAkuVdRsgZDdP4lq5EjyWzwxZCqAoFyHKFwp32g==}
     dependencies:
       '@types/node': 17.0.12
+    dev: true
+
+  /@types/webmidi/2.0.6:
+    resolution: {integrity: sha512-sfS0A5IryqmBrUpcGPipEPeFdpqmZzP6b6lZFxHKgz5n2Vhzh4yJ5P2TvoDUhDjqJyv0Y25ng0Qodgo2Vu08ug==}
     dev: true
 
   /adsr/1.0.1:
