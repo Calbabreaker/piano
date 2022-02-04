@@ -19,7 +19,8 @@ export interface IThread {
 
 export const socketPromise = writable<Promise<void> | undefined>();
 export const instrumentName = writable<InstrumentName>("acoustic_grand_piano");
-export const connectedColorHues = writable<Map<string, string> | null>(null);
+export const connectedColorHues = writable<Map<string, string>>(new Map());
+export const connected = writable<boolean>(false);
 
 export const threadMap = new Map<string, IThread>();
 // "0" is the threadID while playing offline
@@ -47,10 +48,15 @@ function addThread({ socketID, colorHue, instrumentName }: IClientData) {
         colorHue,
     });
 
-    if (get(connectedColorHues) !== null)
-        connectedColorHues.set(get(connectedColorHues).set(socketID, colorHue));
+    connectedColorHues.set(get(connectedColorHues).set(socketID, colorHue));
 
     if (instrumentName) loadInstrument(instrumentName, socketID);
+}
+
+function cleanSocket() {
+    socket.removeAllListeners();
+    socket = null;
+    connected.set(false);
 }
 
 export function socketSetup(playNoteParam: typeof playNote, stopNoteParam: typeof stopNote) {
@@ -68,22 +74,29 @@ export function socketConnect(roomName: string) {
             path: import.meta.env.VITE_BACKEND_PATH,
         });
 
-        socket.on("connect_error", () => reject("Failed to connect to server!"));
-        socket.on("connect_timeout", () => reject("Timed out while connecting to server!"));
+        socket.on("connect_error", () => {
+            cleanSocket();
+            reject("Failed to connect to server!");
+        });
+
+        socket.on("connect_timeout", () => {
+            cleanSocket();
+            reject("Timed out while connecting to server!");
+        });
 
         socket.on("connect", () => {
+            connected.set(true);
             threadMap.delete("0");
-            connectedColorHues.set(new Map());
+            get(connectedColorHues).clear();
             resolve();
 
             history.replaceState({}, `Play Piano! - ${roomName}`, `?room=${roomName}`);
         });
 
         socket.on("disconnect", () => {
-            connectedColorHues.set(null);
             threadMap.clear();
             threadMap.set("0", originalThread);
-            socket = null;
+            cleanSocket();
 
             history.replaceState({}, `Play Piano!`, location.pathname);
         });

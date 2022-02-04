@@ -22,6 +22,7 @@
         socketPromise,
         socket,
         connectedColorHues,
+        connected,
     } from "./socket_player";
     import { getInstrument } from "./utils";
 
@@ -154,7 +155,7 @@
             }}
         />
 
-        {#if $connectedColorHues !== null}
+        {#if $connected}
             <button on:click={() => socket.disconnect()}>Leave</button>
         {:else}
             <button on:click={() => socketConnect(roomName)}>Join</button>
@@ -162,7 +163,7 @@
         {#await $socketPromise}
             <span>Connecting...</span>
         {:then}
-            {#if $connectedColorHues !== null}
+            {#if $connected}
                 <span>Connected!</span><br />
                 <span>People: </span>
                 {#each Array.from($connectedColorHues.entries()) as [socketID, colorHue]}
