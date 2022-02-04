@@ -2,7 +2,7 @@ export const noteNames = ["C", "C#", "D", "D#", "E", "E#", "F", "F#", "G", "G#",
 
 export const keyBinds: { [key: string]: string | undefined } = {
     Backquote: "A#2",
-    Tab: "H2",
+    Tab: "B2",
     KeyQ: "C3",
     Digit2: "C#3",
     KeyW: "D3",
