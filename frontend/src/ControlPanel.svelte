@@ -23,6 +23,7 @@
         socketPromise,
         socket,
         connectedColorHues,
+        connected,
     } from "./socket_player";
     import { getInstrument } from "./utils";
 
@@ -46,7 +47,7 @@
         if (event.code === "Space") $sustain = !$sustain;
 
         if (event.code === "ControlLeft") $octaveShift -= 1;
-        else if (event.code === "AltLeft") $octaveShift += 1;
+        else if (event.code === "AltLeft" || event.code == "ControlRight") $octaveShift += 1;
 
         if ($octaveShift < -3) $octaveShift = 3;
         else if ($octaveShift > 3) $octaveShift = -3;
@@ -57,13 +58,15 @@
 <div class="control-panel">
     <div class="row">
         <div>
-            <span>Sustain (space):</span>
-            <input type="checkbox" bind:checked={$sustain} />
-            <br />
+            <div title="Shortcut: space">
+                <span>Sustain:</span>
+                <input type="checkbox" bind:checked={$sustain} />
+            </div>
 
-            <span>Octave Shift (- ctrl, + alt):</span>
-            <input type="number" min="-3" max="3" bind:value={$octaveShift} />
-            <br />
+            <div title="Shortcut: left ctrl +, left alt or right ctrl -">
+                <span>Octave Shift:</span>
+                <input type="number" min="-3" max="3" bind:value={$octaveShift} />
+            </div>
 
             <span>Note Shift:</span>
             <input type="number" min="-12" max="12" bind:value={$noteShift} />
@@ -74,16 +77,17 @@
             <input type="number" bind:value={$volume} />
             <br />
 
-            <span>Instrument:</span>
-            <select bind:value={$instrumentName}>
-                {#each instrumentNames as name}
-                    <option>{name}</option>
-                {/each}
-            </select>
-            {#await instrumentPromise}
-                loading...
-            {/await}
-            <br />
+            <div>
+                <span>Instrument:</span>
+                <select bind:value={$instrumentName}>
+                    {#each instrumentNames as name}
+                        <option>{name}</option>
+                    {/each}
+                </select>
+                {#await instrumentPromise}
+                    loading...
+                {/await}
+            </div>
 
             <span>Size:</span>
             <select
@@ -96,50 +100,51 @@
                 <option data-range="C4,B5">2 Octaves (24 keys)</option>
                 <option data-range="C4,B4">1 Octave (12 keys)</option>
             </select>
-            <br />
-            <br />
         </div>
 
         <div>
-            <p>Play a midi:</p>
-            <input
-                type="file"
-                on:change={(event) => ($midiFile = event.currentTarget.files?.[0])}
-            />
-            <br />
+            <div>
+                <p>Play a midi:</p>
+                <input
+                    type="file"
+                    on:change={(event) => ($midiFile = event.currentTarget.files?.[0])}
+                />
+            </div>
 
-            {#if $midiPlaying}
-                <button on:click={() => ($midiPlaying = false)}>Pause</button>
-            {:else}
-                <button on:click={() => ($midiPlaying = true)}>Play</button>
-            {/if}
-            <button
-                on:click={() => {
-                    $midiPlaying = false;
-                    $midiCurrentTime = 0;
-                    setTimeout(() => {
-                        $midiPlaying = true;
-                    }, 100);
-                }}
-            >
-                Restart
-            </button>
-            <br />
+            <div>
+                {#if $midiPlaying}
+                    <button on:click={() => ($midiPlaying = false)}>Pause</button>
+                {:else}
+                    <button on:click={() => ($midiPlaying = true)}>Play</button>
+                {/if}
+                <button
+                    on:click={() => {
+                        $midiPlaying = false;
+                        $midiCurrentTime = 0;
+                        setTimeout(() => {
+                            $midiPlaying = true;
+                        }, 100);
+                    }}
+                >
+                    Restart
+                </button>
+            </div>
 
-            Speed: <input type="range" min="0.01" max="4" step="0.01" bind:value={$midiSpeed} />
-            <input type="number" min="0.01" bind:value={$midiSpeed} />times<br />
-            <input
-                type="range"
-                min="0"
-                max={$midiTotalTime}
-                step="0.1"
-                bind:value={$midiCurrentTime}
-                on:mousedown={() => ($midiPlaying = false)}
-                on:mouseup={() => ($midiPlaying = true)}
-                style="width: 18rem"
-            />
-            {$midiCurrentTime.toFixed(1)}/{$midiTotalTime.toFixed(1)} seconds
-            <br />
+            <div>
+                Speed:<input type="range" min="0.01" max="4" step="0.01" bind:value={$midiSpeed} />
+                <input type="number" min="0.01" bind:value={$midiSpeed} />times<br />
+                <input
+                    type="range"
+                    min="0"
+                    max={$midiTotalTime}
+                    step="0.1"
+                    bind:value={$midiCurrentTime}
+                    on:mousedown={() => ($midiPlaying = false)}
+                    on:mouseup={() => ($midiPlaying = true)}
+                    style="width: 18rem"
+                />
+                {$midiCurrentTime.toFixed(1)}/{$midiTotalTime.toFixed(1)} seconds
+            </div>
         </div>
     </div>
 
@@ -154,7 +159,7 @@
             }}
         />
 
-        {#if $connectedColorHues !== null}
+        {#if $connected}
             <button on:click={() => socket.disconnect()}>Leave</button>
         {:else}
             <button on:click={() => socketConnect(roomName)}>Join</button>
@@ -162,7 +167,7 @@
         {#await $socketPromise}
             <span>Connecting...</span>
         {:then}
-            {#if $connectedColorHues !== null}
+            {#if $connected}
                 <span>Connected!</span><br />
                 <span>People: </span>
                 {#each Array.from($connectedColorHues.entries()) as [socketID, colorHue]}
@@ -173,7 +178,7 @@
                 {/each}
             {/if}
         {:catch error}
-            <span style="color: #fe3c3c">{error}</span>
+            <span class="error">{error}</span>
         {/await}
     </div>
 </div>
@@ -186,11 +191,12 @@
     }
 
     .row {
+        margin-bottom: 0.5rem;
         display: flex;
     }
 
     .row div {
-        margin-right: 3rem;
+        margin-right: 2rem;
     }
 
     input[type="range"] {
@@ -210,6 +216,10 @@
     p {
         margin-bottom: 0.5rem;
         margin-top: 0;
+    }
+
+    .error {
+        color: #fe3c3c;
     }
 
     .icon {

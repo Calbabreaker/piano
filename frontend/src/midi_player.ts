@@ -119,7 +119,7 @@ export async function midiPlayerSetup(
         }
     }
 
-    let access = await navigator.requestMIDIAccess();
+    const access = await navigator.requestMIDIAccess();
     function connectDevices() {
         access.inputs.forEach((input) => {
             input.onmidimessage = onMidiEvent;
