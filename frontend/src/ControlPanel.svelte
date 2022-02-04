@@ -2,6 +2,7 @@
     import { writable } from "svelte/store";
 
     export const octaveShift = writable(0);
+    export const noteShift = writable(0);
     export const sustain = writable(false);
     export const volume = writable(25);
     export const noteRange = writable<[string, string]>(["C0", "C0"]);
@@ -62,6 +63,10 @@
 
             <span>Octave Shift (- ctrl, + alt):</span>
             <input type="number" min="-3" max="3" bind:value={$octaveShift} />
+            <br />
+
+            <span>Note Shift:</span>
+            <input type="number" min="-12" max="12" bind:value={$noteShift} />
             <br />
 
             <span>Volume:</span>

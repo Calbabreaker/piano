@@ -1,7 +1,7 @@
 <script lang="ts">
-    import { octaveShift, volume, sustain, noteRange } from "./ControlPanel.svelte";
+    import { octaveShift, noteShift, volume, sustain, noteRange } from "./ControlPanel.svelte";
     import { midiPlayerSetup } from "./midi_player";
-    import { generateNoteMapFromRange, getNoteName, getOctave, keyBinds } from "./notes";
+    import { generateNoteMapFromRange, getNoteName, getOctave, keyBinds, noteNames } from "./notes";
     import type { INoteMap } from "./notes";
     import type { Player } from "soundfont-player";
     import {
@@ -56,8 +56,14 @@
     socketSetup(playNoteEvent, stopNoteEvent);
 
     function getRealNote(note: string): string {
-        const octave = getOctave(note) + $octaveShift;
-        return getNoteName(note) + octave;
+        let octave = getOctave(note) + $octaveShift;
+        let noteNameIdx = noteNames.indexOf(getNoteName(note));
+        noteNameIdx += $noteShift;
+        if (noteNameIdx >= noteNames.length) {
+            octave += Math.floor(noteNameIdx / noteNames.length);
+            noteNameIdx = noteNameIdx % noteNames.length;
+        }
+        return noteNames[noteNameIdx] + octave;
     }
 
     function playNote(note: string, velocity: number) {

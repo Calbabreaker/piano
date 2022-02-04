@@ -1,13 +1,14 @@
-export const noteNames = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
+export const noteNames = ["C", "C#", "D", "D#", "E", "E#", "F", "F#", "G", "G#", "A", "A#", "B", "B#"];
 
 export const keyBinds: { [key: string]: string | undefined } = {
     Backquote: "A#2",
-    Tab: "B2",
+    Tab: "H2",
     KeyQ: "C3",
     Digit2: "C#3",
     KeyW: "D3",
     Digit3: "D#3",
     KeyE: "E3",
+    Key4: "E#3",
     KeyR: "F3",
     Digit5: "F#3",
     KeyT: "G3",
@@ -15,11 +16,13 @@ export const keyBinds: { [key: string]: string | undefined } = {
     KeyY: "A3",
     Digit7: "A#3",
     KeyU: "B3",
+    Key8: "B#8",
     KeyI: "C4",
     Digit9: "C#4",
     KeyO: "D4",
     Digit0: "D#4",
     KeyP: "E4",
+    Minus: "E#4",
     BracketLeft: "F4",
     Equal: "F#4",
     BracketRight: "G4",
@@ -27,11 +30,13 @@ export const keyBinds: { [key: string]: string | undefined } = {
     Backslash: "A4",
     CapsLock: "A#4",
     ShiftLeft: "B4",
+    KeyA: "B#4",
     KeyZ: "C5",
     KeyS: "C#5",
     KeyX: "D5",
     KeyD: "D#5",
     KeyC: "E5",
+    KeyF: "E#5",
     KeyV: "F5",
     KeyG: "F#5",
     KeyB: "G5",
@@ -39,11 +44,13 @@ export const keyBinds: { [key: string]: string | undefined } = {
     KeyN: "A5",
     KeyJ: "A#5",
     KeyM: "B5",
+    KeyK: "B#5",
     Comma: "C6",
     KeyL: "C#6",
     Period: "D6",
     Semicolon: "D#6",
     Slash: "E6",
+    Quote: "E#6",
     ShiftRight: "F6",
     Enter: "F#6",
 };
@@ -81,6 +88,7 @@ export function generateNoteMapFromRange(
 
     const noteMap: INoteMap = {};
     let whiteKeys = 0;
+    const hiddenNoteNames: Array<String> = ["E#", "B#"];
     // go through each octave
     for (let octave = startOctave; octave <= endOctave; octave++) {
         // if first octave start from `startNote` else use C
@@ -91,14 +99,16 @@ export function generateNoteMapFromRange(
             const reachedEndNote = octave === endOctave && noteNameIndex > endNoteNameIndex;
             if (reachedEndNote) break;
             const noteName = noteNames[noteNameIndex];
+            if (!hiddenNoteNames.includes(noteName)) {
 
-            const white = noteName.length === 1;
-            noteMap[noteName + octave] = {
-                white,
-                pressedColor: null,
-                ghost: false,
-            };
-            if (white) whiteKeys++;
+                const white = noteName.length === 1;
+                noteMap[noteName + octave] = {
+                    white,
+                    pressedColor: null,
+                    ghost: false,
+                };
+                if (white) whiteKeys++;
+            }
 
             noteNameIndex++;
         }
