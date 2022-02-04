@@ -68,14 +68,16 @@
                 <input type="number" min="-3" max="3" bind:value={$octaveShift} />
             </div>
 
-            <span>Note Shift:</span>
-            <input type="number" min="-12" max="12" bind:value={$noteShift} />
-            <br />
+            <div>
+                <span>Note Shift:</span>
+                <input type="number" min="-12" max="12" bind:value={$noteShift} />
+            </div>
 
-            <span>Volume:</span>
-            <input type="range" min="0" max="50" step="0.1" bind:value={$volume} />
-            <input type="number" bind:value={$volume} />
-            <br />
+            <div>
+                <span>Volume:</span>
+                <input type="range" min="0" max="50" step="0.1" bind:value={$volume} />
+                <input type="number" bind:value={$volume} />
+            </div>
 
             <div>
                 <span>Instrument:</span>
