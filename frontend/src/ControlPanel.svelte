@@ -43,7 +43,7 @@
     }
 
     function onKeyDown(event: KeyboardEvent) {
-        if (event.code === "Space") $sustain = !$sustain;
+        if (event.code === "Space") $sustain = true;
 
         if (event.code === "ControlLeft") $octaveShift -= 1;
         else if (event.code === "AltLeft" || event.code == "ControlRight") $octaveShift += 1;
@@ -51,9 +51,13 @@
         if ($octaveShift < -3) $octaveShift = 3;
         else if ($octaveShift > 3) $octaveShift = -3;
     }
+
+    function onKeyUp(event: KeyboardEvent) {
+        if (event.code === "Space") $sustain = false;
+    }
 </script>
 
-<svelte:window on:keydown={onKeyDown} />
+<svelte:window on:keydown={onKeyDown} on:keyup={onKeyUp} />
 <div class="control-panel">
     <div class="row">
         <div>
