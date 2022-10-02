@@ -1,13 +1,11 @@
 # Piano Backend
 
-This folder contains the code for the backend socket server for the piano.
+This folder contains the code for the backend socket.io server.
 
 ## Developing
 
 Run `pnpm install` to install dependencies.
 
-Then run `pnpm dev` to start watching changes.
+Then run `pnpm dev` to start build and run in the background.
 
-Finally, run `pnpm build` to build the app for production.
-
-Then run `pnpm start` or `node build/index.js` to start the app in production.
+Run `pnpm build` to build the app for production. Then run `pnpm start` or `node build/index.js` to start the app in production.
