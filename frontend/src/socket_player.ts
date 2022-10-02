@@ -90,13 +90,15 @@ export function socketConnect(roomName: string) {
             connected.set(true);
             threadMap.delete("0");
             get(connectedColorHues).clear();
-            history.pushState({}, undefined, `?room=${roomName}`);
+            history.replaceState({}, undefined, `?room=${roomName}`);
+            document.title = `Room ${roomName} - Play Piano!`;
             resolve();
         });
 
         socket.on("disconnect", () => {
             cleanSocket();
-            history.pushState({}, `Play Piano!`, location.pathname);
+            history.replaceState({}, undefined, location.pathname);
+            document.title = "Play Piano!";
         });
 
         socket.on("play_note", (event) => {
