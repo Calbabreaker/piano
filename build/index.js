@@ -54,10 +54,8 @@ io.on("connection", (socket) => {
                 const noteEvent = event;
                 if (!noteEvent.note || noteEvent.volume == null)
                     throw null;
-                setTimeout(() => {
-                    noteEvent.socketID = socket.id;
-                    socket.to(roomName).emit("play_note", noteEvent);
-                }, 1000);
+                noteEvent.socketID = socket.id;
+                socket.to(roomName).emit("play_note", noteEvent);
             }
             catch (err) {
                 socket.disconnect();
@@ -68,10 +66,8 @@ io.on("connection", (socket) => {
                 const noteEvent = event;
                 if (!noteEvent.note || noteEvent.sustain == null)
                     throw null;
-                setTimeout(() => {
-                    noteEvent.socketID = socket.id;
-                    socket.to(roomName).emit("stop_note", noteEvent);
-                }, 1000);
+                noteEvent.socketID = socket.id;
+                socket.to(roomName).emit("stop_note", noteEvent);
             }
             catch (err) {
                 socket.disconnect();
