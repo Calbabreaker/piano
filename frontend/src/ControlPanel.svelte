@@ -12,7 +12,7 @@
     import {
         midiCurrentTime,
         midiTotalTime,
-        midiPlaying,
+        midiIsPlaying,
         midiFile,
         midiSpeed,
     } from "./midi_player";
@@ -30,11 +30,13 @@
 
     $: instrumentPromise = getInstrument($instrumentName);
 
-    const urlParams = new URLSearchParams(window.location.search);
-    const urlRoomName = urlParams.get("room");
-    if (urlRoomName) {
-        roomName = urlRoomName;
-        socketConnect(roomName);
+    function onLoad() {
+        const urlParams = new URLSearchParams(location.search);
+        const urlRoomName = urlParams.get("room");
+        if (urlRoomName != null) {
+            roomName = urlRoomName;
+            socketConnect(roomName);
+        }
     }
 
     function sizeSelectChange(select: HTMLSelectElement) {
@@ -57,7 +59,7 @@
     }
 </script>
 
-<svelte:window on:keydown={onKeyDown} on:keyup={onKeyUp} />
+<svelte:window on:keydown={onKeyDown} on:keyup={onKeyUp} on:load={onLoad} />
 <div class="control-panel">
     <div class="row">
         <div>
@@ -112,18 +114,16 @@
             </div>
 
             <div>
-                {#if $midiPlaying}
-                    <button on:click={() => ($midiPlaying = false)}>Pause</button>
+                {#if $midiIsPlaying}
+                    <button on:click={() => ($midiIsPlaying = false)}>Pause</button>
                 {:else}
-                    <button on:click={() => ($midiPlaying = true)}>Play</button>
+                    <button on:click={() => ($midiIsPlaying = true)}>Play</button>
                 {/if}
                 <button
                     on:click={() => {
-                        $midiPlaying = false;
+                        $midiIsPlaying = false;
                         $midiCurrentTime = 0;
-                        setTimeout(() => {
-                            $midiPlaying = true;
-                        }, 100);
+                        setTimeout(() => ($midiIsPlaying = true));
                     }}
                 >
                     Restart
@@ -139,8 +139,8 @@
                     max={$midiTotalTime}
                     step="0.1"
                     bind:value={$midiCurrentTime}
-                    on:mousedown={() => ($midiPlaying = false)}
-                    on:mouseup={() => ($midiPlaying = true)}
+                    on:mousedown={() => ($midiIsPlaying = false)}
+                    on:mouseup={() => ($midiIsPlaying = true)}
                     style="width: 18rem"
                 />
                 {$midiCurrentTime.toFixed(1)}/{$midiTotalTime.toFixed(1)} seconds

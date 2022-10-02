@@ -2,7 +2,7 @@ import { Midi } from "@tonejs/midi";
 import { writable, get } from "svelte/store";
 import { midiToNote } from "./notes";
 
-export const midiPlaying = writable(false);
+export const midiIsPlaying = writable(false);
 export const midiCurrentTime = writable(0); // time in seconds
 export const midiTotalTime = writable(0); // time in seconds
 export const midiFile = writable<File | undefined>();
@@ -34,7 +34,7 @@ export async function midiPlayerSetup(
     }
 
     midiFile.subscribe((file) => {
-        midiPlaying.set(false);
+        midiIsPlaying.set(false);
         midiTotalTime.set(0);
         midiCurrentTime.set(0);
         if (!file) {
@@ -64,13 +64,13 @@ export async function midiPlayerSetup(
             }
         });
 
-        if (midiNow > get(midiTotalTime)) midiPlaying.set(false);
+        if (midiNow > get(midiTotalTime)) midiIsPlaying.set(false);
     }
 
-    midiPlaying.subscribe((playing) => {
-        if (!playing) return;
+    midiIsPlaying.subscribe((isPlaying) => {
+        if (!isPlaying) return;
         if (!midiJSON) {
-            midiPlaying.set(false);
+            midiIsPlaying.set(false);
             return alert("No MIDI file selected!");
         }
 
@@ -93,7 +93,7 @@ export async function midiPlayerSetup(
 
         let lastFrameTime = performance.now();
         const updateLoop = () => {
-            if (!get(midiPlaying)) return;
+            if (!get(midiIsPlaying)) return;
 
             const now = performance.now();
             const delta = now - lastFrameTime;

@@ -63,9 +63,9 @@ export function midiToNote(midi: number): string {
 }
 
 export interface INote {
-    white: boolean;
+    isWhite: boolean;
     pressedColor: string | null;
-    ghost: boolean;
+    isGhost: boolean;
 }
 
 export type INoteMap = { [key: string]: INote | undefined };
@@ -92,13 +92,13 @@ export function generateNoteMapFromRange(
             if (reachedEndNote) break;
             const noteName = noteNames[noteNameIndex];
 
-            const white = noteName.length === 1;
+            const isWhite = noteName.length === 1;
             noteMap[noteName + octave] = {
-                white,
+                isWhite,
                 pressedColor: null,
-                ghost: false,
+                isGhost: false,
             };
-            if (white) whiteKeys++;
+            if (isWhite) whiteKeys++;
 
             noteNameIndex++;
         }

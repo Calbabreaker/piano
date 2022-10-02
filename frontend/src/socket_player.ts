@@ -20,7 +20,7 @@ export interface IThread {
 export const socketPromise = writable<Promise<void> | undefined>();
 export const instrumentName = writable<InstrumentName>("acoustic_grand_piano");
 export const connectedColorHues = writable<Map<string, string>>(new Map());
-export const connected = writable<boolean>(false);
+export const connected = writable(false);
 
 export const threadMap = new Map<string, IThread>();
 // "0" is the threadID while playing offline
@@ -50,18 +50,20 @@ function addThread({ socketID, colorHue, instrumentName }: IClientData) {
 
     connectedColorHues.set(get(connectedColorHues).set(socketID, colorHue));
 
-    if (instrumentName) loadInstrument(instrumentName, socketID);
+    if (instrumentName) loadInstrument(instrumentName as InstrumentName, socketID);
 }
 
 function cleanSocket() {
     socket.removeAllListeners();
     socket = null;
     connected.set(false);
+    threadMap.clear();
+    threadMap.set("0", originalThread);
 }
 
-export function socketSetup(playNoteParam: typeof playNote, stopNoteParam: typeof stopNote) {
-    playNote = playNoteParam;
-    stopNote = stopNoteParam;
+export function socketSetup(playNoteFunc: typeof playNote, stopNoteFunc: typeof stopNote) {
+    playNote = playNoteFunc;
+    stopNote = stopNoteFunc;
 }
 
 export function socketConnect(roomName: string) {
@@ -88,17 +90,13 @@ export function socketConnect(roomName: string) {
             connected.set(true);
             threadMap.delete("0");
             get(connectedColorHues).clear();
+            history.pushState({}, undefined, `?room=${roomName}`);
             resolve();
-
-            history.replaceState({}, `Play Piano! - ${roomName}`, `?room=${roomName}`);
         });
 
         socket.on("disconnect", () => {
-            threadMap.clear();
-            threadMap.set("0", originalThread);
             cleanSocket();
-
-            history.replaceState({}, `Play Piano!`, location.pathname);
+            history.pushState({}, `Play Piano!`, location.pathname);
         });
 
         socket.on("play_note", (event) => {
@@ -111,8 +109,7 @@ export function socketConnect(roomName: string) {
 
         socket.on("instrument_change", (event) => {
             const { instrumentName, socketID } = event as IInstrumentChangeEvent;
-
-            loadInstrument(instrumentName, socketID);
+            loadInstrument(instrumentName as InstrumentName, socketID);
         });
 
         socket.on("client_connect", (data) => {
@@ -139,26 +136,17 @@ export function socketConnect(roomName: string) {
 
 export function socketPlayNote(note: string, volume: number) {
     const noteEvent: IPlayNoteEvent = { note, volume };
-    if (socket) {
-        socket.emit("play_note", noteEvent);
-    } else {
-        playNote(noteEvent);
-    }
+    if (socket) socket.emit("play_note", noteEvent);
+    playNote({ ...noteEvent, socketID: socket?.id ?? "0" });
 }
 
 export function socketStopNote(note: string, sustain: boolean) {
     const noteEvent: IStopNoteEvent = { note, sustain };
-    if (socket) {
-        socket.emit("stop_note", noteEvent);
-    } else {
-        stopNote(noteEvent);
-    }
+    if (socket) socket.emit("stop_note", noteEvent);
+    stopNote({ ...noteEvent, socketID: socket?.id ?? "0" });
 }
 
 instrumentName.subscribe((instrumentName) => {
-    if (socket) {
-        socket.emit("instrument_change", { instrumentName } as IInstrumentChangeEvent);
-    } else {
-        loadInstrument(instrumentName, "0");
-    }
+    if (socket) socket.emit("instrument_change", { instrumentName } as IInstrumentChangeEvent);
+    loadInstrument(instrumentName, socket?.id ?? "0");
 });
