@@ -6,7 +6,6 @@ import {
     IClientData,
     IInstrumentChangeEvent,
 } from "./socket_events";
-import { InstrumentName } from "./instrument_names";
 import { config } from "dotenv";
 config();
 
@@ -30,7 +29,7 @@ io.on("connection", (socket) => {
         if (typeof roomName !== "string") throw new Error("Invalid roomName!");
         socket.join(roomName);
 
-        const instrumentName = socket.handshake.query.instrumentName as InstrumentName;
+        const instrumentName = socket.handshake.query.instrumentName;
         if (typeof instrumentName !== "string") throw new Error("Invalid instrument name!");
 
         if (!roomClientMap.has(roomName)) roomClientMap.set(roomName, []);
@@ -48,9 +47,11 @@ io.on("connection", (socket) => {
         socket.on("instrument_change", (event) => {
             try {
                 const instrumentEvent = event as IInstrumentChangeEvent;
+                if (!instrumentEvent.instrumentName) throw null;
+
                 instrumentEvent.socketID = socket.id;
                 clientData.instrumentName = instrumentEvent.instrumentName;
-                io.to(roomName).emit("instrument_change", instrumentEvent);
+                socket.to(roomName).emit("instrument_change", instrumentEvent);
             } catch (err) {
                 socket.disconnect();
             }
@@ -59,8 +60,12 @@ io.on("connection", (socket) => {
         socket.on("play_note", (event) => {
             try {
                 const noteEvent = event as IPlayNoteEvent;
-                noteEvent.socketID = socket.id;
-                io.to(roomName).emit("play_note", noteEvent);
+                if (!noteEvent.note || noteEvent.volume == null) throw null;
+
+                setTimeout(() => {
+                    noteEvent.socketID = socket.id;
+                    socket.to(roomName).emit("play_note", noteEvent);
+                }, 1000);
             } catch (err) {
                 socket.disconnect();
             }
@@ -69,25 +74,23 @@ io.on("connection", (socket) => {
         socket.on("stop_note", (event) => {
             try {
                 const noteEvent = event as IStopNoteEvent;
-                noteEvent.socketID = socket.id;
-                io.to(roomName).emit("stop_note", noteEvent);
+                if (!noteEvent.note || noteEvent.sustain == null) throw null;
+
+                setTimeout(() => {
+                    noteEvent.socketID = socket.id;
+                    socket.to(roomName).emit("stop_note", noteEvent);
+                }, 1000);
             } catch (err) {
                 socket.disconnect();
             }
         });
 
         socket.on("disconnect", () => {
-            let index: number | undefined = undefined;
-            for (let i = 0; i < connectedClients.length; i++) {
-                if (connectedClients[i].socketID === socket.id) {
-                    index = i;
-                    break;
-                }
-            }
+            const index = connectedClients.findIndex((client) => client.socketID == socket.id);
+            if (index !== -1) connectedClients.splice(index, 1);
 
-            if (index !== undefined) connectedClients.splice(index, 1);
             if (connectedClients.length === 0) roomClientMap.delete(roomName);
-            io.to(roomName).emit("client_disconnect", socket.id);
+            socket.to(roomName).emit("client_disconnect", socket.id);
         });
     } catch (err) {
         socket.disconnect();

@@ -39,9 +39,11 @@ io.on("connection", (socket) => {
         socket.on("instrument_change", (event) => {
             try {
                 const instrumentEvent = event;
+                if (!instrumentEvent.instrumentName)
+                    throw null;
                 instrumentEvent.socketID = socket.id;
                 clientData.instrumentName = instrumentEvent.instrumentName;
-                io.to(roomName).emit("instrument_change", instrumentEvent);
+                socket.to(roomName).emit("instrument_change", instrumentEvent);
             }
             catch (err) {
                 socket.disconnect();
@@ -50,8 +52,12 @@ io.on("connection", (socket) => {
         socket.on("play_note", (event) => {
             try {
                 const noteEvent = event;
-                noteEvent.socketID = socket.id;
-                io.to(roomName).emit("play_note", noteEvent);
+                if (!noteEvent.note || noteEvent.volume == null)
+                    throw null;
+                setTimeout(() => {
+                    noteEvent.socketID = socket.id;
+                    socket.to(roomName).emit("play_note", noteEvent);
+                }, 1000);
             }
             catch (err) {
                 socket.disconnect();
@@ -60,26 +66,24 @@ io.on("connection", (socket) => {
         socket.on("stop_note", (event) => {
             try {
                 const noteEvent = event;
-                noteEvent.socketID = socket.id;
-                io.to(roomName).emit("stop_note", noteEvent);
+                if (!noteEvent.note || noteEvent.sustain == null)
+                    throw null;
+                setTimeout(() => {
+                    noteEvent.socketID = socket.id;
+                    socket.to(roomName).emit("stop_note", noteEvent);
+                }, 1000);
             }
             catch (err) {
                 socket.disconnect();
             }
         });
         socket.on("disconnect", () => {
-            let index = undefined;
-            for (let i = 0; i < connectedClients.length; i++) {
-                if (connectedClients[i].socketID === socket.id) {
-                    index = i;
-                    break;
-                }
-            }
-            if (index !== undefined)
+            const index = connectedClients.findIndex((client) => client.socketID == socket.id);
+            if (index !== -1)
                 connectedClients.splice(index, 1);
             if (connectedClients.length === 0)
                 roomClientMap.delete(roomName);
-            io.to(roomName).emit("client_disconnect", socket.id);
+            socket.to(roomName).emit("client_disconnect", socket.id);
         });
     }
     catch (err) {
