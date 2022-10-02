@@ -123,7 +123,7 @@
                     on:click={() => {
                         $midiIsPlaying = false;
                         $midiCurrentTime = 0;
-                        setTimeout(() => ($midiIsPlaying = true));
+                        setTimeout(() => ($midiIsPlaying = true), 100);
                     }}
                 >
                     Restart

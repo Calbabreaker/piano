@@ -47,7 +47,7 @@ export async function midiPlayerSetup(
         reader.readAsArrayBuffer(file);
     });
 
-    function update(delta: number) {
+    function onUpdate(delta: number) {
         const midiNow = get(midiCurrentTime) + delta;
         midiCurrentTime.set(midiNow);
 
@@ -76,31 +76,21 @@ export async function midiPlayerSetup(
 
         // uses binary search to get fill indexUpTo
         midiJSON.tracks.forEach((track, trackI) => {
-            let left = 0;
-            let right = track.notes.length - 1;
-            while (left != right) {
-                const i = Math.ceil((left + right) / 2);
-                const note = track.notes[i];
-                if (note.time > get(midiCurrentTime)) {
-                    right = i - 1;
-                } else {
-                    left = i;
-                }
-            }
-
-            tracksIndexUpTo[trackI] = left;
+            const currentTime = get(midiCurrentTime);
+            const noteIndex = binarySearch(track.notes, (note) => note.time - currentTime);
+            tracksIndexUpTo[trackI] = noteIndex;
         });
 
         let lastFrameTime = performance.now();
-        const updateLoop = () => {
+        function updateLoop() {
             if (!get(midiIsPlaying)) return;
 
             const now = performance.now();
             const delta = now - lastFrameTime;
             lastFrameTime = now;
-            update((delta / 1000) * get(midiSpeed));
+            onUpdate((delta / 1000) * get(midiSpeed));
             requestAnimationFrame(updateLoop);
-        };
+        }
 
         updateLoop();
     });
@@ -130,4 +120,20 @@ export async function midiPlayerSetup(
     access.onstatechange = () => {
         connectDevices();
     };
+}
+
+function binarySearch<T>(array: T[], compareFunc: (elm: T) => number): number {
+    let left = 0;
+    let right = array.length - 1;
+    while (left != right) {
+        const middle = Math.ceil((left + right) / 2);
+        let result = compareFunc(array[middle]);
+        if (result > 0) {
+            right = middle - 1;
+        } else {
+            left = middle;
+        }
+    }
+
+    return right;
 }
