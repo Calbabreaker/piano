@@ -19,7 +19,8 @@
     import {
         instrumentName,
         socketConnect,
-        socketPromise,
+        connecting,
+        connectError,
         socket,
         connectedColorHues,
         connected,
@@ -161,25 +162,22 @@
 
         {#if $connected}
             <button on:click={() => socket.disconnect()}>Leave</button>
+            <span>Connected!</span><br />
+            <span>People: </span>
+            {#each Array.from($connectedColorHues.entries()) as [socketID, colorHue]}
+                <div class="icon" style={`--color-hue: ${colorHue}`} />
+                {#if socketID === socket.id}
+                    <span style="margin-right: 0.5rem">(you)</span>
+                {/if}
+            {/each}
+        {:else if $connectError}
+            <span class="error">{connectError}</span>
         {:else}
-            <button on:click={() => socketConnect(roomName)}>Join</button>
+            <button on:click={() => socketConnect(roomName)} disabled={$connecting}>Join</button>
         {/if}
-        {#await $socketPromise}
+        {#if $connecting}
             <span>Connecting...</span>
-        {:then}
-            {#if $connected}
-                <span>Connected!</span><br />
-                <span>People: </span>
-                {#each Array.from($connectedColorHues.entries()) as [socketID, colorHue]}
-                    <div class="icon" style={`--color-hue: ${colorHue}`} />
-                    {#if socketID === socket.id}
-                        <span style="margin-right: 0.5rem">(you)</span>
-                    {/if}
-                {/each}
-            {/if}
-        {:catch error}
-            <span class="error">{error}</span>
-        {/await}
+        {/if}
     </div>
 </div>
 

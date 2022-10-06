@@ -17,7 +17,8 @@ export interface IThread {
     colorHue: string;
 }
 
-export const socketPromise = writable<Promise<void> | undefined>();
+export const connecting = writable(false);
+export const connectError = writable("");
 export const instrumentName = writable<InstrumentName>("acoustic_grand_piano");
 export const connectedColorHues = writable<Map<string, string>>(new Map());
 export const connected = writable(false);
@@ -56,6 +57,7 @@ function addThread({ socketID, colorHue, instrumentName }: IClientData) {
 function cleanSocket() {
     socket.removeAllListeners();
     socket = null;
+    connecting.set(false);
     connected.set(false);
     threadMap.clear();
     threadMap.set("0", originalThread);
@@ -67,73 +69,71 @@ export function socketSetup(playNoteFunc: typeof playNote, stopNoteFunc: typeof 
 }
 
 export function socketConnect(roomName: string) {
-    const promise = new Promise<void>((resolve, reject) => {
-        const BACKEND_HOST = import.meta.env.VITE_BACKEND_HOST;
-        if (!BACKEND_HOST) return reject("No backend server was specified in build!");
+    const BACKEND_HOST = import.meta.env.VITE_BACKEND_HOST;
+    if (!BACKEND_HOST) return connectError.set("No backend server was specified in build!");
+    connectError.set("");
+    connecting.set(true);
 
-        socket = io(BACKEND_HOST, {
-            query: { roomName, instrumentName: get(instrumentName) },
-            path: import.meta.env.VITE_BACKEND_PATH,
-        });
-
-        socket.on("connect_error", () => {
-            cleanSocket();
-            reject("Failed to connect to server!");
-        });
-
-        socket.on("connect_timeout", () => {
-            cleanSocket();
-            reject("Timed out while connecting to server!");
-        });
-
-        socket.on("connect", () => {
-            connected.set(true);
-            threadMap.delete("0");
-            get(connectedColorHues).clear();
-            history.replaceState({}, undefined, `?room=${roomName}`);
-            document.title = `Room ${roomName} - Play Piano!`;
-            resolve();
-        });
-
-        socket.on("disconnect", () => {
-            cleanSocket();
-            history.replaceState({}, undefined, location.pathname);
-            document.title = "Play Piano!";
-        });
-
-        socket.on("play_note", (event) => {
-            playNote(event as IPlayNoteEvent);
-        });
-
-        socket.on("stop_note", (event) => {
-            stopNote(event as IStopNoteEvent);
-        });
-
-        socket.on("instrument_change", (event) => {
-            const { instrumentName, socketID } = event as IInstrumentChangeEvent;
-            loadInstrument(instrumentName as InstrumentName, socketID);
-        });
-
-        socket.on("client_connect", (data) => {
-            addThread(data as IClientData);
-        });
-
-        socket.on("client_list_recieve", (datas) => {
-            const clientDatas = datas as IClientData[];
-            for (let clientData of clientDatas) {
-                addThread(clientData);
-            }
-        });
-
-        socket.on("client_disconnect", (socketID) => {
-            const colorHues = get(connectedColorHues);
-            colorHues.delete(socketID);
-            connectedColorHues.set(colorHues);
-            threadMap.delete(socketID);
-        });
+    socket = io(BACKEND_HOST, {
+        query: { roomName, instrumentName: get(instrumentName) },
+        path: import.meta.env.VITE_BACKEND_PATH,
     });
 
-    socketPromise.set(promise);
+    socket.on("connect_error", () => {
+        cleanSocket();
+        connectError.set("Failed to connect to server!");
+    });
+
+    socket.on("connect_timeout", () => {
+        cleanSocket();
+        connectError.set("Timed out while connecting to server!");
+    });
+
+    socket.on("connect", () => {
+        connecting.set(false);
+        connected.set(true);
+        threadMap.delete("0");
+        get(connectedColorHues).clear();
+        history.replaceState({}, undefined, `?room=${roomName}`);
+        document.title = `Room ${roomName} - Play Piano!`;
+    });
+
+    socket.on("disconnect", () => {
+        cleanSocket();
+        history.replaceState({}, undefined, location.pathname);
+        document.title = "Play Piano!";
+    });
+
+    socket.on("play_note", (event) => {
+        playNote(event as IPlayNoteEvent);
+    });
+
+    socket.on("stop_note", (event) => {
+        stopNote(event as IStopNoteEvent);
+    });
+
+    socket.on("instrument_change", (event) => {
+        const { instrumentName, socketID } = event as IInstrumentChangeEvent;
+        loadInstrument(instrumentName as InstrumentName, socketID);
+    });
+
+    socket.on("client_connect", (data) => {
+        addThread(data as IClientData);
+    });
+
+    socket.on("client_list_recieve", (datas) => {
+        const clientDatas = datas as IClientData[];
+        for (let clientData of clientDatas) {
+            addThread(clientData);
+        }
+    });
+
+    socket.on("client_disconnect", (socketID) => {
+        const colorHues = get(connectedColorHues);
+        colorHues.delete(socketID);
+        connectedColorHues.set(colorHues);
+        threadMap.delete(socketID);
+    });
 }
 
 export function socketPlayNote(note: string, volume: number) {
