@@ -145,7 +145,7 @@
     on:pointerup={() => (mouseDown = false)}
 />
 <div class="piano-container" bind:this={pianoContainer}>
-    <div class="piano" on:touchend|preventDefault>
+    <div class="piano" on:touchstart|preventDefault>
         {#each Object.entries(noteMap) as [note, { isWhite, pressedColor, isGhost }]}
             <div
                 class="key {isWhite ? 'white' : 'black'}"

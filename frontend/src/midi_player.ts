@@ -47,16 +47,15 @@ export async function midiPlayerSetup(
         reader.readAsArrayBuffer(file);
     });
 
-    function onUpdate(delta: number) {
-        const midiNow = get(midiCurrentTime) + delta;
+    function onUpdate(deltaSecs: number) {
+        const midiNow = get(midiCurrentTime) + deltaSecs;
         midiCurrentTime.set(midiNow);
 
         midiJSON.tracks.forEach((track, i) => {
             const note = track.notes[tracksIndexUpTo[i]];
             if (!note) return;
 
-            const delta = midiNow - note.time;
-            if (delta > 0) {
+            if (midiNow > note.time) {
                 playNote(note.name, note.velocity);
                 setTimeout(() => stopNote(note.name), (note.duration * 1000) / get(midiSpeed));
 
