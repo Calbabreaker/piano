@@ -30,7 +30,7 @@ io.on("connection", (socket) => {
         const connectedClients = roomClientMap.get(roomName);
         socket.emit("client_list_recieve", connectedClients);
         const clientData = {
-            colorHue: genHue().toString(),
+            colorHue: Math.round(Math.random() * 360).toString(),
             socketID: socket.id,
             instrumentName,
         };
@@ -86,13 +86,3 @@ io.on("connection", (socket) => {
         socket.disconnect();
     }
 });
-function genHue() {
-    let hue = Math.round(Math.random() * 360);
-    // close to pressed note colour
-    if (closeTo(hue, 220))
-        hue = genHue();
-    return hue;
-}
-function closeTo(a, b) {
-    return Math.abs(a - b) <= 20;
-}
