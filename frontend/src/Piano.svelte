@@ -184,13 +184,13 @@
     }
 
     .key:hover {
-        background-color: rgb(33, 192, 197);
-        border: rgb(20, 112, 116) solid 1px;
+        background-color: #6cc5c9;
+        border: #457d80 solid 1px;
     }
 
     .pressed {
-        background-color: hsl(var(--color-hue), 70%, 50%) !important;
-        border: hsl(var(--color-hue), 70%, 40%) solid 2px !important;
+        background-color: hsl(var(--color-hue), 60%, 50%) !important;
+        border: hsl(var(--color-hue), 60%, 40%) solid 2px !important;
         transform: translateY(2.5%);
         box-shadow: 0px 0px 1px rgba(32, 32, 32, 0.2);
     }

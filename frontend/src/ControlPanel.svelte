@@ -170,12 +170,13 @@
                     <span style="margin-right: 0.5rem">(you)</span>
                 {/if}
             {/each}
-        {:else if $connectError}
-            <span class="error">{connectError}</span>
         {:else}
             <button on:click={() => socketConnect(roomName)} disabled={$connecting}>Join</button>
         {/if}
-        {#if $connecting}
+
+        {#if $connectError}
+            <span class="error">{$connectError}</span>
+        {:else if $connecting}
             <span>Connecting...</span>
         {/if}
     </div>
@@ -222,8 +223,8 @@
 
     .icon {
         display: inline-block;
-        background-color: hsl(var(--color-hue), 70%, 50%);
-        border: hsl(var(--color-hue), 70%, 40%) solid 2px;
+        background-color: hsl(var(--color-hue), 60%, 50%);
+        border: hsl(var(--color-hue), 60%, 40%) solid 2px;
         width: 1rem;
         height: 1rem;
         margin-bottom: -5px;

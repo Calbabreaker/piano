@@ -21,6 +21,7 @@ export async function midiPlayerSetup(
         // filter empty tracks
         midiJSON.tracks = midiJSON.tracks.filter((track) => track.notes.length !== 0);
 
+        // get total time
         let totalTime = 0;
         midiJSON.tracks.forEach((track) => {
             const lastNote = track.notes[track.notes.length - 1];
@@ -88,7 +89,7 @@ export async function midiPlayerSetup(
             const delta = now - lastFrameTime;
             lastFrameTime = now;
             onUpdate((delta / 1000) * get(midiSpeed));
-            requestAnimationFrame(updateLoop);
+            setTimeout(updateLoop, 10);
         }
 
         updateLoop();
