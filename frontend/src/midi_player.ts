@@ -53,13 +53,13 @@ export async function midiPlayerSetup(
         midiCurrentTime.set(midiNow);
 
         midiJSON.tracks.forEach((track, i) => {
-            const note = track.notes[tracksIndexUpTo[i]];
-            if (!note) return;
+            // Keep going through all notes over current time to do sumeltanous notes
+            while (true) {
+                const note = track.notes[tracksIndexUpTo[i]];
+                if (!note || midiNow < note.time) break;
 
-            if (midiNow > note.time) {
                 playNote(note.name, note.velocity);
                 setTimeout(() => stopNote(note.name), (note.duration * 1000) / get(midiSpeed));
-
                 tracksIndexUpTo[i]++;
             }
         });
@@ -67,8 +67,14 @@ export async function midiPlayerSetup(
         if (midiNow > get(midiTotalTime)) midiIsPlaying.set(false);
     }
 
+    let playInterval: number;
+
     midiIsPlaying.subscribe((isPlaying) => {
-        if (!isPlaying) return;
+        if (!isPlaying) {
+            clearInterval(playInterval);
+            return;
+        }
+
         if (!midiJSON) {
             midiIsPlaying.set(false);
             return alert("No MIDI file selected!");
@@ -83,16 +89,13 @@ export async function midiPlayerSetup(
 
         let lastFrameTime = performance.now();
         function updateLoop() {
-            if (!get(midiIsPlaying)) return;
-
             const now = performance.now();
             const delta = now - lastFrameTime;
             lastFrameTime = now;
             onUpdate((delta / 1000) * get(midiSpeed));
-            setTimeout(updateLoop, 10);
         }
 
-        updateLoop();
+        playInterval = setInterval(updateLoop, 10);
     });
 
     function onMidiEvent(event: WebMidi.MIDIMessageEvent) {
