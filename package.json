@@ -4,9 +4,9 @@
     "license": "GPL-3",
     "private": true,
     "scripts": {
-        "dev": "concurrently \"tsc -w\" \"nodemon dist/index.js\"",
+        "dev": "concurrently \"tsc -w\" \"nodemon npm start\"",
         "build": "tsc",
-        "start": "node build/index.js"
+        "start": "node build/backend/src/index.js"
     },
     "devDependencies": {
         "concurrently": "^6.5.1",
