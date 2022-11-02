@@ -26,6 +26,7 @@ io.on("connection", (socket) => {
     const roomName = (_a = socket.handshake.query) === null || _a === void 0 ? void 0 : _a.roomName;
     const instrumentName = (_b = socket.handshake.query) === null || _b === void 0 ? void 0 : _b.instrumentName;
     if (typeof roomName !== "string" ||
+        roomName.length > 100 ||
         typeof instrumentName !== "string" ||
         !instrumentNameMap[instrumentName]) {
         socket.disconnect();

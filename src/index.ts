@@ -34,6 +34,7 @@ io.on("connection", (socket) => {
     const instrumentName = socket.handshake.query?.instrumentName;
     if (
         typeof roomName !== "string" ||
+        roomName.length > 100 ||
         typeof instrumentName !== "string" ||
         !instrumentNameMap[instrumentName]
     ) {
