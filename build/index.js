@@ -3,7 +3,7 @@ var _a, _b;
 Object.defineProperty(exports, "__esModule", { value: true });
 const socket_io_1 = require("socket.io");
 const http_1 = require("http");
-const instrument_names_1 = require("../../frontend/src/instrument_names");
+const instrument_names_1 = require("./instrument_names");
 const dotenv_1 = require("dotenv");
 (0, dotenv_1.config)();
 const PORT = (_a = process.env.PORT) !== null && _a !== void 0 ? _a : 5000;
