@@ -69,7 +69,9 @@ export function socketSetup(playNoteFunc: typeof playNote, stopNoteFunc: typeof 
 }
 
 export function socketConnect(roomName: string) {
-    if (get(connected)) return;
+    if (get(connecting) || get(connected)) return;
+
+    if (roomName.length > 100) return connectError.set("Room name to long!");
 
     const BACKEND_HOST = import.meta.env.VITE_BACKEND_HOST;
     if (!BACKEND_HOST) return connectError.set("No backend server was specified in build!");
