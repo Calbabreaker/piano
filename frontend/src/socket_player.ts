@@ -51,7 +51,7 @@ function addThread({ socketID, colorHue, instrumentName }: IClientData) {
 
     connectedColorHues.set(get(connectedColorHues).set(socketID, colorHue));
 
-    if (instrumentName) loadInstrument(instrumentName as InstrumentName, socketID);
+    if (instrumentName) loadInstrument(instrumentName, socketID);
 }
 
 function cleanSocket() {
@@ -114,7 +114,7 @@ export function socketConnect(roomName: string) {
 
     socket.on("instrument_change", (event) => {
         const { instrumentName, socketID } = event as IInstrumentChangeEvent;
-        loadInstrument(instrumentName as InstrumentName, socketID);
+        loadInstrument(instrumentName, socketID);
     });
 
     socket.on("client_connect", (data) => {

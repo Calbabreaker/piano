@@ -1,7 +1,9 @@
+import { InstrumentName } from "../../frontend/src/instrument_names";
+
 export interface IClientData {
     colorHue: string;
     socketID: string;
-    instrumentName: string;
+    instrumentName: InstrumentName;
 }
 
 export interface IPlayNoteEvent {
@@ -17,6 +19,6 @@ export interface IStopNoteEvent {
 }
 
 export interface IInstrumentChangeEvent {
-    instrumentName: string;
+    instrumentName: InstrumentName;
     socketID?: string;
 }
