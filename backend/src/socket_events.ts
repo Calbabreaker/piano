@@ -1,4 +1,4 @@
-import { InstrumentName } from "../../frontend/src/instrument_names";
+import { InstrumentName } from "./instrument_names";
 
 export interface IClientData {
     colorHue: string;

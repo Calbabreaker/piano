@@ -8,7 +8,7 @@
 </script>
 
 <script lang="ts">
-    import { instrumentNames } from "./instrument_names";
+    import { instrumentNames } from "../../backend/src/instrument_names";
     import {
         midiCurrentTime,
         midiTotalTime,

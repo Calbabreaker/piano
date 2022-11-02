@@ -8,7 +8,7 @@ import type {
     IStopNoteEvent,
     IInstrumentChangeEvent,
 } from "../../backend/src/socket_events";
-import type { InstrumentName } from "./instrument_names";
+import type { InstrumentName } from "../../backend/src/instrument_names";
 import { getInstrument } from "./utils";
 
 export interface IThread {
