@@ -169,6 +169,8 @@
 <style>
     .piano-container {
         height: 100%;
+        display: flex;
+        justify-content: center;
     }
 
     .piano {
