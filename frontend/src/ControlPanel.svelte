@@ -3,7 +3,7 @@
 
     export const octaveShift = writable(0);
     export const sustain = writable(false);
-    export const volume = writable(25);
+    export const volume = writable(5);
     export const noteRange = writable<[string, string]>(["C0", "C0"]);
 </script>
 
@@ -76,7 +76,7 @@
 
             <div>
                 <span>Volume:</span>
-                <input type="range" min="0" max="50" step="0.1" bind:value={$volume} />
+                <input type="range" min="0" max="10" step="0.1" bind:value={$volume} />
                 <input type="number" bind:value={$volume} />
             </div>
 

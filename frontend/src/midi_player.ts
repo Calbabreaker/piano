@@ -1,4 +1,5 @@
 import { Midi } from "@tonejs/midi";
+import type { Note } from "@tonejs/midi/dist/Note";
 import { writable, get } from "svelte/store";
 import { midiToNote } from "./notes";
 
@@ -15,13 +16,16 @@ export async function midiPlayerSetup(
     let tracksIndexUpTo: number[] = [];
     let midiJSON: Midi | null = null;
 
+    let playIntervalID: number;
+    let heldNotes: Note[] = [];
+
     function generatePlayInfo(readResult: ArrayBuffer) {
         midiJSON = new Midi(readResult);
 
         // filter empty tracks
         midiJSON.tracks = midiJSON.tracks.filter((track) => track.notes.length !== 0);
 
-        // get total time
+        // get total time by going through tracks
         let totalTime = 0;
         midiJSON.tracks.forEach((track) => {
             const lastNote = track.notes[track.notes.length - 1];
@@ -52,14 +56,22 @@ export async function midiPlayerSetup(
         const midiNow = get(midiCurrentTime) + deltaSecs;
         midiCurrentTime.set(midiNow);
 
+        // Check and release held notes
+        heldNotes.forEach((note, i) => {
+            if (midiNow > note.time + note.duration) {
+                stopNote(note.name);
+                swapRemove(heldNotes, i);
+            }
+        });
+
         midiJSON.tracks.forEach((track, i) => {
-            // Keep going through all notes over current time to do sumeltanous notes
+            // Keep going through all notes over current time to do simultaneous notes
             while (true) {
                 const note = track.notes[tracksIndexUpTo[i]];
                 if (!note || midiNow < note.time) break;
 
                 playNote(note.name, note.velocity);
-                setTimeout(() => stopNote(note.name), (note.duration * 1000) / get(midiSpeed));
+                heldNotes.push(note);
                 tracksIndexUpTo[i]++;
             }
         });
@@ -67,11 +79,10 @@ export async function midiPlayerSetup(
         if (midiNow > get(midiTotalTime)) midiIsPlaying.set(false);
     }
 
-    let playInterval: number;
-
     midiIsPlaying.subscribe((isPlaying) => {
         if (!isPlaying) {
-            clearInterval(playInterval);
+            clearInterval(playIntervalID);
+            heldNotes = [];
             return;
         }
 
@@ -80,7 +91,7 @@ export async function midiPlayerSetup(
             return alert("No MIDI file selected!");
         }
 
-        // uses binary search to get fill indexUpTo
+        // Find where we are up to for all the tracks based on the current time
         midiJSON.tracks.forEach((track, trackI) => {
             const currentTime = get(midiCurrentTime);
             const noteIndex = binarySearch(track.notes, (note) => note.time - currentTime);
@@ -95,7 +106,7 @@ export async function midiPlayerSetup(
             onUpdate((delta / 1000) * get(midiSpeed));
         }
 
-        playInterval = setInterval(updateLoop, 10);
+        playIntervalID = setInterval(updateLoop, 10);
     });
 
     function onMidiEvent(event: WebMidi.MIDIMessageEvent) {
@@ -139,4 +150,9 @@ function binarySearch<T>(array: T[], compareFunc: (elm: T) => number): number {
     }
 
     return right;
+}
+
+function swapRemove<T>(array: T[], i: number) {
+    array[i] = array[array.length - 1];
+    array.pop();
 }
