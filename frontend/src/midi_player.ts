@@ -82,6 +82,7 @@ export async function midiPlayerSetup(
     midiIsPlaying.subscribe((isPlaying) => {
         if (!isPlaying) {
             clearInterval(playIntervalID);
+            heldNotes.forEach((note) => stopNote(note.name));
             heldNotes = [];
             return;
         }
