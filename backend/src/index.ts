@@ -12,7 +12,7 @@ config();
 
 const PORT = (process.env.PORT as number | undefined) ?? 5000;
 const server = createServer().listen(PORT, "0.0.0.0", () => {
-    console.log(`Server running on port ${PORT}.`);
+    console.log(`Server running on ${PORT}.`);
 });
 
 const io = new Server(server, {

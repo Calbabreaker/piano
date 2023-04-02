@@ -9,19 +9,19 @@
         "check": "svelte-check --tsconfig ./tsconfig.json"
     },
     "devDependencies": {
-        "@sveltejs/vite-plugin-svelte": "^2.0.2",
+        "@sveltejs/vite-plugin-svelte": "^2.0.4",
         "@tsconfig/svelte": "^3.0.0",
-        "@types/webmidi": "^2.0.6",
-        "svelte": "^3.55.0",
-        "svelte-check": "^3.0.1",
-        "svelte-preprocess": "^5.0.0",
-        "tslib": "^2.4.1",
-        "typescript": "^4.9.4",
-        "vite": "^4.0.4"
+        "@types/webmidi": "^2.0.7",
+        "svelte": "^3.58.0",
+        "svelte-check": "^3.1.4",
+        "svelte-preprocess": "^5.0.3",
+        "tslib": "^2.5.0",
+        "typescript": "^5.0.3",
+        "vite": "^4.2.1"
     },
     "dependencies": {
         "@tonejs/midi": "^2.0.28",
-        "socket.io-client": "^4.5.4",
+        "socket.io-client": "^4.6.1",
         "soundfont-player": "^0.12.0"
     }
 }
