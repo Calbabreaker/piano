@@ -8,7 +8,7 @@ const dotenv_1 = require("dotenv");
 (0, dotenv_1.config)();
 const PORT = (_a = process.env.PORT) !== null && _a !== void 0 ? _a : 5000;
 const server = (0, http_1.createServer)().listen(PORT, "0.0.0.0", () => {
-    console.log(`Server running on port ${PORT}.`);
+    console.log(`Server running on ${PORT}.`);
 });
 const io = new socket_io_1.Server(server, {
     cors: {
