@@ -76,7 +76,6 @@ io.on("connection", (socket) => {
     });
 
     socket.on("play_note", (event) => {
-        console.log(event, roomName);
         const noteEvent = event as IPlayNoteEvent;
         if (typeof noteEvent?.note === "string" && typeof noteEvent?.volume === "number") {
             noteEvent.socketID = socket.id;
