@@ -81,9 +81,10 @@ export function socketConnect(roomName: string) {
     socket = io(BACKEND_HOST, {
         query: { roomName, instrumentName: get(instrumentName) },
         path: import.meta.env.VITE_BACKEND_PATH,
+        reconnection: false,
     });
 
-    socket.on("connecterror", (err) => {
+    socket.on("connect_error", (err) => {
         cleanSocket();
         connectError.set("Failed to connect to server: " + err.message);
     });
@@ -114,7 +115,6 @@ export function socketConnect(roomName: string) {
     });
 
     socket.on("play_note", (event) => {
-        console.log(event);
         playNote(event as IPlayNoteEvent);
     });
 
