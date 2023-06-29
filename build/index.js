@@ -32,11 +32,16 @@ io.on("connection", (socket) => {
         socket.disconnect();
         return;
     }
-    socket.join(roomName);
     if (!roomClientMap.has(roomName)) {
         roomClientMap.set(roomName, []);
     }
     const connectedClients = roomClientMap.get(roomName);
+    if (connectedClients.length > 50) {
+        socket.emit("error_message", "Room has over 50 people already!");
+        socket.disconnect();
+        return;
+    }
+    socket.join(roomName);
     socket.emit("client_list_recieve", connectedClients);
     const clientData = {
         colorHue: Math.round(Math.random() * 360).toString(),
@@ -55,6 +60,7 @@ io.on("connection", (socket) => {
         socket.to(roomName).emit("instrument_change", instrumentEvent);
     });
     socket.on("play_note", (event) => {
+        console.log(event, roomName);
         const noteEvent = event;
         if (typeof (noteEvent === null || noteEvent === void 0 ? void 0 : noteEvent.note) === "string" && typeof (noteEvent === null || noteEvent === void 0 ? void 0 : noteEvent.volume) === "number") {
             noteEvent.socketID = socket.id;
