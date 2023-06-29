@@ -83,9 +83,14 @@ export function socketConnect(roomName: string) {
         path: import.meta.env.VITE_BACKEND_PATH,
     });
 
-    socket.on("connect_error", () => {
+    socket.on("connecterror", (err) => {
         cleanSocket();
-        connectError.set("Failed to connect to server!");
+        connectError.set("Failed to connect to server: " + err.message);
+    });
+
+    // Non built-in error sent by server
+    socket.on("error_message", (message) => {
+        connectError.set(message);
     });
 
     socket.on("connect_timeout", () => {
@@ -109,6 +114,7 @@ export function socketConnect(roomName: string) {
     });
 
     socket.on("play_note", (event) => {
+        console.log(event);
         playNote(event as IPlayNoteEvent);
     });
 
