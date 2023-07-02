@@ -82,6 +82,7 @@ export function socketConnect(roomName: string) {
         query: { roomName, instrumentName: get(instrumentName) },
         path: import.meta.env.VITE_BACKEND_PATH,
         reconnection: false,
+        timeout: 1000 * 60, // 1 minute timeout
     });
 
     socket.on("connect_error", (err) => {
