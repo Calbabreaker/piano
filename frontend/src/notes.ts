@@ -1,5 +1,6 @@
 export const noteNames = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
 
+// Key binds to notes that make sense on a QWERTY keyboard
 export const keyBinds: { [key: string]: string | undefined } = {
     Backquote: "A#2",
     Tab: "B2",
@@ -47,6 +48,56 @@ export const keyBinds: { [key: string]: string | undefined } = {
     ShiftRight: "F6",
     Enter: "F#6",
 };
+
+// Maps a note to a key bind key to show up on the piano
+// prettier-ignore
+export const noteToKeyBindKey:  {[key: string]: string | undefined } = {
+    "A#2": "`",
+    "B2": "↹",
+    "C3": "Q",
+    "C#3": "2",
+    "D3": "W",
+    "D#3": "3",
+    "E3": "E",
+    "F3": "R",
+    "F#3": "5",
+    "G3": "T",
+    "G#3": "6",
+    "A3": "Y",
+    "A#3": "7",
+    "B3": "U",
+    "C4": "I",
+    "C#4": "9",
+    "D4": "O",
+    "D#4": "0",
+    "E4": "P",
+    "F4": "[",
+    "F#4": "=",
+    "G4": "]",
+    "G#4": "⌫",
+    "A4": "\\",
+    "A#4": "⇪",
+    "B4": "⇧",
+    "C5": "Z",
+    "C#5": "S",
+    "D5": "X" ,
+    "D#5": "D",
+    "E5": "C", 
+    "F5": "V", 
+    "F#5": "G", 
+    "G5": "B", 
+    "G#5": "H", 
+    "A5": "N", 
+    "A#5": "J", 
+    "B5": "M", 
+    "C6": ",",
+    "C#6": "L",
+    "D6": ".",
+    "D#6": ";",
+    "E6": "/",
+    "F6": "⇧",
+    "F#6": "↩",
+}
 
 // Gets the octave last number from the note (eg. F#6 -> 6)
 export function getOctave(note: string): number {

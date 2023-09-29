@@ -1,11 +1,18 @@
 <script lang="ts">
     import { ControlPanelData } from "./ControlPanel.svelte";
     import { MidiPlayer } from "./midi_player";
-    import { generateNoteMapFromRange, getNoteName, getOctave, keyBinds } from "./notes";
+    import {
+        generateNoteMapFromRange,
+        getNoteName,
+        getOctave,
+        keyBinds,
+        noteToKeyBindKey,
+    } from "./notes";
     import type { INoteMap } from "./notes";
     import type { Player } from "soundfont-player";
     import type { SocketPlayer } from "./socket_player";
     import { onMount } from "svelte";
+    import { get } from "svelte/store";
 
     let mouseDown: boolean = false;
     let whiteKeys: number;
@@ -182,7 +189,9 @@
                 on:pointerleave={() => stopNote(note)}
                 on:pointerup={() => stopNote(note)}
                 style="--color-hue: {pressedColor}"
-            />
+            >
+                {noteToKeyBindKey[getNoteName(note) + (getOctave(note) - $octaveShift)] ?? ""}
+            </div>
         {/each}
     </div>
 </div>
@@ -204,11 +213,16 @@
         border-radius: 0px 0px 4px 4px;
         box-shadow: 0px 5px 1px rgba(32, 32, 32, 0.2);
         user-select: none;
+        display: flex;
+        align-items: flex-end;
+        justify-content: center;
+        padding-bottom: calc(var(--width) / 8);
+        font-size: calc(var(--width) / 1.5);
     }
 
     .key:hover {
-        background-color: #6cc5c9;
-        border: #457d80 solid 1px;
+        background-color: hsl(183, 40%, 70%);
+        border: hsl(183, 20%, 40%) solid 1px;
     }
 
     .pressed {
@@ -231,9 +245,10 @@
 
     .black {
         --width: calc(var(--white-key-width) / 1.6666);
-        background-color: rgb(26, 26, 26);
+        background-color: hsl(0, 0%, 10%);
         margin-left: calc(var(--width) / -2);
         margin-right: calc(var(--width) / -2);
         z-index: 2;
+        color: white;
     }
 </style>

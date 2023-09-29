@@ -15,3 +15,25 @@ export function getInstrument(name: InstrumentName): Promise<Soundfont.Player> {
 
     return instrumentCache[name];
 }
+
+// Thanks https://stackoverflow.com/questions/22697936/binary-search-in-javascript
+export function binarySearch<T>(array: T[], compareFunc: (elm: T) => number): number {
+    let left = 0;
+    let right = array.length - 1;
+    while (left != right) {
+        const middle = Math.ceil((left + right) / 2);
+        let result = compareFunc(array[middle]);
+        if (result > 0) {
+            right = middle - 1;
+        } else {
+            left = middle;
+        }
+    }
+
+    return right;
+}
+
+export function swapRemove<T>(array: T[], i: number) {
+    array[i] = array[array.length - 1];
+    array.pop();
+}

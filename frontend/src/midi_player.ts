@@ -2,6 +2,7 @@ import { Midi } from "@tonejs/midi";
 import type { Note } from "@tonejs/midi/dist/Note";
 import { writable, get } from "svelte/store";
 import { midiToNote } from "./notes";
+import { binarySearch, swapRemove } from "./utils";
 
 export class MidiPlayer {
     // These need to use svelte store so that the ui can update dynamically
@@ -149,26 +150,4 @@ export class MidiPlayer {
             this.onStopNote(midiToNote(key));
         }
     }
-}
-
-// Thanks https://stackoverflow.com/questions/22697936/binary-search-in-javascript
-function binarySearch<T>(array: T[], compareFunc: (elm: T) => number): number {
-    let left = 0;
-    let right = array.length - 1;
-    while (left != right) {
-        const middle = Math.ceil((left + right) / 2);
-        let result = compareFunc(array[middle]);
-        if (result > 0) {
-            right = middle - 1;
-        } else {
-            left = middle;
-        }
-    }
-
-    return right;
-}
-
-function swapRemove<T>(array: T[], i: number) {
-    array[i] = array[array.length - 1];
-    array.pop();
 }
