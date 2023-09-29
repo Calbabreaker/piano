@@ -16,6 +16,7 @@ const io = new socket_io_1.Server(server, {
         methods: ["GET", "POST"],
     },
 });
+// Used to check if an instrument name is invalid
 const instrumentNameMap = {};
 instrument_names_1.instrumentNames.forEach((name) => {
     instrumentNameMap[name] = true;
@@ -25,6 +26,7 @@ io.on("connection", (socket) => {
     var _a, _b;
     const roomName = (_a = socket.handshake.query) === null || _a === void 0 ? void 0 : _a.roomName;
     const instrumentName = (_b = socket.handshake.query) === null || _b === void 0 ? void 0 : _b.instrumentName;
+    // If the queries are not valid then immediatly disconnect the user since that should not be happening
     if (typeof roomName !== "string" ||
         roomName.length > 100 ||
         typeof instrumentName !== "string" ||
@@ -42,6 +44,7 @@ io.on("connection", (socket) => {
         return;
     }
     socket.join(roomName);
+    // Send the list of clients in this room when connected
     socket.emit("client_list_recieve", connectedClients);
     const clientData = {
         colorHue: Math.round(Math.random() * 360).toString(),

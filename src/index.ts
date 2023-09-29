@@ -22,6 +22,7 @@ const io = new Server(server, {
     },
 });
 
+// Used to check if an instrument name is invalid
 const instrumentNameMap: { [key: string]: boolean } = {};
 instrumentNames.forEach((name) => {
     instrumentNameMap[name] = true;
@@ -32,6 +33,8 @@ const roomClientMap: Map<string, IClientData[]> = new Map();
 io.on("connection", (socket) => {
     const roomName = socket.handshake.query?.roomName;
     const instrumentName = socket.handshake.query?.instrumentName;
+    
+    // If the queries are not valid then immediatly disconnect the user since that should not be happening
     if (
         typeof roomName !== "string" ||
         roomName.length > 100 ||
@@ -54,6 +57,7 @@ io.on("connection", (socket) => {
     }
 
     socket.join(roomName);
+    // Send the list of clients in this room when connected
     socket.emit("client_list_recieve", connectedClients);
 
     const clientData: IClientData = {
