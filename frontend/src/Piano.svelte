@@ -1,17 +1,10 @@
 <script lang="ts">
     import { ControlPanelData } from "./ControlPanel.svelte";
-    import { midiPlayerSetup } from "./midi_player";
+    import { MidiPlayer } from "./midi_player";
     import { generateNoteMapFromRange, getNoteName, getOctave, keyBinds } from "./notes";
     import type { INoteMap } from "./notes";
     import type { Player } from "soundfont-player";
-    import {
-        socketSetup,
-        socketPlayNote,
-        socketStopNote,
-        originalThread,
-        threadMap,
-    } from "./socket_player";
-    import type { IPlayNoteEvent, IStopNoteEvent } from "../../backend/src/socket_events";
+    import type { SocketPlayer } from "./socket_player";
     import { onMount } from "svelte";
 
     let mouseDown: boolean = false;
@@ -28,50 +21,17 @@
     export let controlPanelData: ControlPanelData;
     let { noteRange, sustain, octaveShift, volume } = controlPanelData;
 
-    // Remake the noteMap (aka. piano data) when the noteRage changed
-    noteRange.subscribe((range) => {
-        [noteMap, whiteKeys] = generateNoteMapFromRange(range[0], range[1]);
-    });
+    // Set play and stop note functions so that the midiPlayer can play notes on this piano
+    export let midiPlayer: MidiPlayer;
+    midiPlayer.onPlayNote = playNote;
+    midiPlayer.onStopNote = stopNote;
 
-    socketSetup(playNoteEvent, stopNoteEvent);
+    export let socketPlayer: SocketPlayer;
 
-    // Gets the note with the octave shift applied
-    function getShiftedNote(note: string): string {
-        const octave = getOctave(note) + $octaveShift;
-        return getNoteName(note) + octave;
-    }
-
-    // These note functions relay the what note the user played to the socket player
-    function playNote(note: string, velocity: number) {
-        const realNote = getShiftedNote(note);
-
-        // Only play if a note isn't already being held
-        if (!pressedMap.has(realNote)) {
-            if (noteMap[note]) {
-                noteMap[note].isGhost = true;
-            }
-
-            pressedMap.set(realNote, true);
-            socketPlayNote(realNote, $volume * velocity);
-        }
-    }
-
-    function stopNote(note: string) {
-        const realNote = getShiftedNote(note);
-        if (pressedMap.has(realNote)) {
-            if (noteMap[note]) {
-                noteMap[note].isGhost = false;
-            }
-
-            pressedMap.delete(realNote);
-            socketStopNote(realNote, $sustain);
-        }
-    }
-
-    // These functions do the actual playing
-    function playNoteEvent({ socketID, note, volume }: IPlayNoteEvent) {
-        const thread = threadMap.get(socketID);
-
+    // These set the functions that do the actual playing using the instrument
+    // SocketPlayer needs to handle when to play since it also might need to send the note event to the server
+    // and find out which thread the current user is using to play
+    socketPlayer.onPlayNote = ({ note, volume }, thread) => {
         if (noteMap[note]) {
             noteMap[note].pressedColor = thread.colorHue;
         }
@@ -85,11 +45,9 @@
                 })
             );
         }
-    }
+    };
 
-    function stopNoteEvent({ socketID, note, sustain }: IStopNoteEvent) {
-        const thread = threadMap.get(socketID);
-
+    socketPlayer.onStopNote = ({ note, sustain }, thread) => {
         if (noteMap[note]) {
             noteMap[note].pressedColor = null;
         }
@@ -97,9 +55,45 @@
         if (!sustain) {
             stopAudioNode(note, thread.audioNodeMap);
         }
+    };
+
+    // Remake the noteMap (aka. piano data) when the noteRage changed
+    noteRange.subscribe((range) => {
+        [noteMap, whiteKeys] = generateNoteMapFromRange(range[0], range[1]);
+    });
+
+    // Gets the note with the octave shift applied
+    function getShiftedNote(note: string): string {
+        const octave = getOctave(note) + $octaveShift;
+        return getNoteName(note) + octave;
     }
 
-    midiPlayerSetup(playNote, stopNote);
+    // These functions relay the playing to the socket player
+    function playNote(note: string, velocity: number) {
+        const realNote = getShiftedNote(note);
+
+        // Only play if a note isn't already being held
+        if (!pressedMap.has(realNote)) {
+            if (noteMap[note]) {
+                noteMap[note].isGhost = true;
+            }
+
+            pressedMap.set(realNote, true);
+            socketPlayer.playNote(realNote, $volume * velocity);
+        }
+    }
+
+    function stopNote(note: string) {
+        const realNote = getShiftedNote(note);
+        if (pressedMap.has(realNote)) {
+            if (noteMap[note]) {
+                noteMap[note].isGhost = false;
+            }
+
+            pressedMap.delete(realNote);
+            socketPlayer.stopNote(realNote, $sustain);
+        }
+    }
 
     function stopAudioNode(note: string, audioNodeMap: Map<string, Player>) {
         if (audioNodeMap.get(note)) {
@@ -111,9 +105,9 @@
     // Stop all notes when sustain turned off
     sustain.subscribe((sustain) => {
         if (!sustain) {
-            for (const note of originalThread.audioNodeMap.keys()) {
+            for (const note of socketPlayer.originalThread.audioNodeMap.keys()) {
                 if (!pressedMap.get(note)) {
-                    socketStopNote(note, false);
+                    socketPlayer.stopNote(note, false);
                 }
             }
         }
@@ -122,11 +116,11 @@
     // Unpress all pressed keys to prevent 'phantom notes' when the octave changed
     octaveShift.subscribe(() => {
         for (const note of pressedMap.keys()) {
-            socketStopNote(note, $sustain);
+            socketPlayer.stopNote(note, $sustain);
         }
     });
 
-    function recalcWidth(numWhiteKeys = whiteKeys) {
+    function recalcWidth(numWhiteKeys: number) {
         if (pianoContainer) {
             const maxWidth = pianoContainer.clientHeight / 6;
             const width = pianoContainer.offsetWidth / numWhiteKeys;
@@ -134,10 +128,11 @@
         }
     }
 
+    // Recalc when whiteKeys (and thereby the noteRange) changes
     $: recalcWidth(whiteKeys);
 
     onMount(() => {
-        recalcWidth();
+        recalcWidth(whiteKeys);
     });
 
     function onKeyDown(event: KeyboardEvent) {
@@ -160,7 +155,7 @@
 </script>
 
 <svelte:window
-    on:resize={() => recalcWidth()}
+    on:resize={() => recalcWidth(whiteKeys)}
     on:keyup={onKeyup}
     on:keydown={onKeyDown}
     on:pointerdown={() => (mouseDown = true)}
@@ -175,6 +170,7 @@
                 class:pressed={pressedColor !== null}
                 class:ghost={isGhost && pressedColor === null}
                 on:pointerdown={(event) => {
+                    // Prevents holding selecting things on IOS
                     event.currentTarget.releasePointerCapture(event.pointerId);
                     playNote(note, 0.5);
                 }}

@@ -12,21 +12,9 @@
 
 <script lang="ts">
     import { instrumentNames } from "../../backend/src/instrument_names";
+    import { MidiPlayer } from "./midi_player";
     import {
-        midiCurrentTime,
-        midiTotalTime,
-        midiIsPlaying,
-        midiFile,
-        midiSpeed,
-    } from "./midi_player";
-    import {
-        instrumentName,
-        socketConnect,
-        connecting,
-        connectError,
-        socket,
-        connectedColorHues,
-        connected,
+        SocketPlayer
     } from "./socket_player";
     import { getInstrument } from "./utils";
 
@@ -35,14 +23,21 @@
     $: instrumentPromise = getInstrument($instrumentName);
 
     export let controlPanelData: ControlPanelData;
+    export let midiPlayer: MidiPlayer;
+    export let socketPlayer: SocketPlayer;
+
+    // We need to destructure these so that we can use svelte bind syntax ($)
     let { noteRange, sustain, octaveShift, volume } = controlPanelData;
+    let { midiFile, midiIsPlaying, midiCurrentTime, midiSpeed, midiTotalTime } = midiPlayer;
+    let {instrumentName, connected, connecting, connectError, connectedColorHues} = socketPlayer;
 
     function onLoad() {
+        // Gets the ?room=[room_name] from the url and connects to a room
         const urlParams = new URLSearchParams(location.search);
         const urlRoomName = urlParams.get("room");
         if (urlRoomName != null) {
             roomName = urlRoomName;
-            socketConnect(roomName);
+            socketPlayer.connect(roomName);
         }
     }
 
@@ -126,6 +121,7 @@
                 <p>Play a midi:</p>
                 <input
                     type="file"
+                    accept=".midi,.mid"
                     on:change={(event) => ($midiFile = event.currentTarget.files?.[0])}
                 />
             </div>
@@ -172,22 +168,26 @@
             placeholder="Room name"
             bind:value={roomName}
             on:keydown={(event) => {
-                if (event.code === "Enter") socketConnect(roomName);
+                if (event.code === "Enter") {
+                    socketPlayer.connect(roomName);
+                }
             }}
         />
 
         {#if $connected}
-            <button on:click={() => socket.disconnect()}>Leave</button>
+            <button on:click={() => socketPlayer.socket.disconnect()}>Leave</button>
             <span>Connected!</span><br />
             <span>People: </span>
+            <!-- Generate the connected square icons -->
             {#each Array.from($connectedColorHues.entries()) as [socketID, colorHue]}
                 <div class="icon" style={`--color-hue: ${colorHue}`} />
-                {#if socketID === socket.id}
+                <!-- Indentify the users color -->
+                {#if socketID === socketPlayer.socket.id}
                     <span style="margin-right: 0.5rem">(you)</span>
                 {/if}
             {/each}
         {:else}
-            <button on:click={() => socketConnect(roomName)} disabled={$connecting}>Join</button>
+            <button on:click={() => socketPlayer.connect(roomName)} disabled={$connecting}>Join</button>
         {/if}
 
         {#if $connectError}
