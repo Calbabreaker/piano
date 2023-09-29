@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { octaveShift, volume, sustain, noteRange } from "./ControlPanel.svelte";
+    import { ControlPanelData } from "./ControlPanel.svelte";
     import { midiPlayerSetup } from "./midi_player";
     import { generateNoteMapFromRange, getNoteName, getOctave, keyBinds } from "./notes";
     import type { INoteMap } from "./notes";
@@ -15,68 +15,84 @@
     import { onMount } from "svelte";
 
     let mouseDown: boolean = false;
-
-    let noteMap: INoteMap;
     let whiteKeys: number;
     let pianoContainer: HTMLDivElement;
 
+    // A map mapping a note name to some note state data include if it's pressed
+    let noteMap: INoteMap;
+
     // This map allows us to know if the local user is pressing a key
-    // noteMap is unreliable here because other users could be pressing the same keys
+    // noteMap is unreliable here because other users (in multiplayer) could be pressing the same keys
     let pressedMap = new Map<string, boolean>();
 
+    export let controlPanelData: ControlPanelData;
+    let { noteRange, sustain, octaveShift, volume } = controlPanelData;
+
+    // Remake the noteMap (aka. piano data) when the noteRage changed
     noteRange.subscribe((range) => {
-        const output = generateNoteMapFromRange(range[0], range[1]);
-        noteMap = output.noteMap;
-        whiteKeys = output.whiteKeys;
+        [noteMap, whiteKeys] = generateNoteMapFromRange(range[0], range[1]);
     });
 
     socketSetup(playNoteEvent, stopNoteEvent);
 
-    // Gets the actual note with the octave shift
-    function getRealNote(note: string): string {
+    // Gets the note with the octave shift applied
+    function getShiftedNote(note: string): string {
         const octave = getOctave(note) + $octaveShift;
         return getNoteName(note) + octave;
     }
 
-    // These play functions relay the what note the user played to the socket player
+    // These note functions relay the what note the user played to the socket player
     function playNote(note: string, velocity: number) {
-        const realNote = getRealNote(note);
-        if (pressedMap.get(realNote)) return;
-        if (noteMap[note]) noteMap[note].isGhost = true;
+        const realNote = getShiftedNote(note);
 
-        pressedMap.set(realNote, true);
-        socketPlayNote(realNote, $volume * velocity);
+        // Only play if a note isn't already being held
+        if (!pressedMap.has(realNote)) {
+            if (noteMap[note]) {
+                noteMap[note].isGhost = true;
+            }
+
+            pressedMap.set(realNote, true);
+            socketPlayNote(realNote, $volume * velocity);
+        }
     }
 
     function stopNote(note: string) {
-        const realNote = getRealNote(note);
-        if (noteMap[note]) noteMap[note].isGhost = false;
-        if (!pressedMap.get(realNote)) return;
+        const realNote = getShiftedNote(note);
+        if (pressedMap.has(realNote)) {
+            if (noteMap[note]) {
+                noteMap[note].isGhost = false;
+            }
 
-        pressedMap.delete(realNote);
-        socketStopNote(realNote, $sustain);
+            pressedMap.delete(realNote);
+            socketStopNote(realNote, $sustain);
+        }
     }
 
     // These functions do the actual playing
     function playNoteEvent({ socketID, note, volume }: IPlayNoteEvent) {
         const thread = threadMap.get(socketID);
 
-        if (noteMap[note]) noteMap[note].pressedColor = thread.colorHue;
-        if (!thread.instrument) return;
+        if (noteMap[note]) {
+            noteMap[note].pressedColor = thread.colorHue;
+        }
 
-        stopAudioNode(note, thread.audioNodeMap);
-        thread.audioNodeMap.set(
-            note,
-            thread.instrument.play(note, undefined, {
-                gain: volume,
-            })
-        );
+        if (thread.instrument) {
+            stopAudioNode(note, thread.audioNodeMap);
+            thread.audioNodeMap.set(
+                note,
+                thread.instrument.play(note, undefined, {
+                    gain: volume,
+                })
+            );
+        }
     }
 
     function stopNoteEvent({ socketID, note, sustain }: IStopNoteEvent) {
         const thread = threadMap.get(socketID);
 
-        if (noteMap[note]) noteMap[note].pressedColor = null;
+        if (noteMap[note]) {
+            noteMap[note].pressedColor = null;
+        }
 
         if (!sustain) {
             stopAudioNode(note, thread.audioNodeMap);
@@ -92,17 +108,18 @@
         }
     }
 
-    // stop all sustain audio nodes when sustain changed
+    // Stop all notes when sustain turned off
     sustain.subscribe((sustain) => {
-        if (sustain) return;
-        for (const note of originalThread.audioNodeMap.keys()) {
-            if (!pressedMap.get(note)) {
-                socketStopNote(note, false);
+        if (!sustain) {
+            for (const note of originalThread.audioNodeMap.keys()) {
+                if (!pressedMap.get(note)) {
+                    socketStopNote(note, false);
+                }
             }
         }
     });
 
-    // unpress all pressed keys to prevent 'phantom notes' when octave shifting
+    // Unpress all pressed keys to prevent 'phantom notes' when the octave changed
     octaveShift.subscribe(() => {
         for (const note of pressedMap.keys()) {
             socketStopNote(note, $sustain);
@@ -110,10 +127,11 @@
     });
 
     function recalcWidth(numWhiteKeys = whiteKeys) {
-        if (!pianoContainer) return;
-        const maxWidth = pianoContainer.clientHeight / 6;
-        const width = pianoContainer.offsetWidth / numWhiteKeys;
-        pianoContainer.style.setProperty("--white-key-width", `${Math.min(width, maxWidth)}px`);
+        if (pianoContainer) {
+            const maxWidth = pianoContainer.clientHeight / 6;
+            const width = pianoContainer.offsetWidth / numWhiteKeys;
+            pianoContainer.style.setProperty("--white-key-width", `${Math.min(width, maxWidth)}px`);
+        }
     }
 
     $: recalcWidth(whiteKeys);
@@ -125,6 +143,8 @@
     function onKeyDown(event: KeyboardEvent) {
         const note = keyBinds[event.code];
         const target = event.target as HTMLElement;
+
+        // If the keyBind exists and the user is not selected in a text box or something then play the note
         if (note && target.tagName !== "INPUT") {
             event.preventDefault();
             playNote(note, 0.5);
@@ -133,7 +153,9 @@
 
     function onKeyup(event: KeyboardEvent) {
         const note = keyBinds[event.code];
-        if (note) stopNote(note);
+        if (note) {
+            stopNote(note);
+        }
     }
 </script>
 
@@ -146,6 +168,7 @@
 />
 <div class="piano-container" bind:this={pianoContainer}>
     <div class="piano" on:touchstart|preventDefault>
+        <!-- Loop through all the notes in noteMap and create a div for each note -->
         {#each Object.entries(noteMap) as [note, { isWhite, pressedColor, isGhost }]}
             <div
                 class="key {isWhite ? 'white' : 'black'}"
@@ -156,7 +179,9 @@
                     playNote(note, 0.5);
                 }}
                 on:pointerenter={() => {
-                    if (mouseDown) playNote(note, 0.5);
+                    if (mouseDown) {
+                        playNote(note, 0.5);
+                    }
                 }}
                 on:pointerleave={() => stopNote(note)}
                 on:pointerup={() => stopNote(note)}

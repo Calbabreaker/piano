@@ -1,11 +1,13 @@
 <script lang="ts">
     import Piano from "./Piano.svelte";
-    import ControlPanel from "./ControlPanel.svelte";
+    import ControlPanel, { ControlPanelData } from "./ControlPanel.svelte";
+
+    let controlPanelData = new ControlPanelData();
 </script>
 
 <main>
-    <ControlPanel />
-    <Piano />
+    <ControlPanel {controlPanelData} />
+    <Piano {controlPanelData} />
 </main>
 
 <style>

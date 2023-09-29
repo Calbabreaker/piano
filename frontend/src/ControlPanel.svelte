@@ -1,10 +1,13 @@
 <script lang="ts" context="module">
     import { writable } from "svelte/store";
 
-    export const octaveShift = writable(0);
-    export const sustain = writable(false);
-    export const volume = writable(5);
-    export const noteRange = writable<[string, string]>(["C0", "C0"]);
+    export class ControlPanelData {
+        // Use a svelte store for each property to allow us to only update when those specific values change
+        octaveShift = writable(0);
+        sustain = writable(false);
+        volume = writable(5);
+        noteRange = writable<[string, string]>(["C0", "C0"]);
+    }
 </script>
 
 <script lang="ts">
@@ -31,6 +34,9 @@
 
     $: instrumentPromise = getInstrument($instrumentName);
 
+    export let controlPanelData: ControlPanelData;
+    let { noteRange, sustain, octaveShift, volume } = controlPanelData;
+
     function onLoad() {
         const urlParams = new URLSearchParams(location.search);
         const urlRoomName = urlParams.get("room");
@@ -46,17 +52,27 @@
     }
 
     function onKeyDown(event: KeyboardEvent) {
-        if (event.code === "Space") $sustain = true;
+        if (event.code === "Space") {
+            $sustain = true;
+        }
 
-        if (event.code === "ControlLeft") $octaveShift -= 1;
-        else if (event.code === "AltLeft" || event.code == "ControlRight") $octaveShift += 1;
+        if (event.code === "ControlLeft") {
+            $octaveShift -= 1;
+        } else if (event.code === "AltLeft" || event.code == "ControlRight") {
+            $octaveShift += 1;
+        }
 
-        if ($octaveShift < -3) $octaveShift = 3;
-        else if ($octaveShift > 3) $octaveShift = -3;
+        if ($octaveShift < -3) {
+            $octaveShift = 3;
+        } else if ($octaveShift > 3) {
+            $octaveShift = -3;
+        }
     }
 
     function onKeyUp(event: KeyboardEvent) {
-        if (event.code === "Space") $sustain = false;
+        if (event.code === "Space") {
+            $sustain = false;
+        }
     }
 </script>
 

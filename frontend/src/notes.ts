@@ -48,10 +48,12 @@ export const keyBinds: { [key: string]: string | undefined } = {
     Enter: "F#6",
 };
 
+// Gets the octave last number from the note (eg. F#6 -> 6)
 export function getOctave(note: string): number {
     return parseInt(note.charAt(note.length - 1));
 }
 
+// Gets the note name from the note (eg. F#6 -> F#)
 export function getNoteName(note: string): string {
     return note.substring(0, note.length - 1);
 }
@@ -64,45 +66,55 @@ export function midiToNote(midi: number): string {
 
 export interface INote {
     isWhite: boolean;
+    // A string that will be a hsl color value of its pressed color if the note is pressed
+    // This is to allow multiplayer support from different clients with different colors
     pressedColor: string | null;
     isGhost: boolean;
 }
 
 export type INoteMap = { [key: string]: INote | undefined };
 
-export function generateNoteMapFromRange(
-    startNote: string,
-    endNote: string
-): { noteMap: INoteMap; whiteKeys: number } {
+// Takes in a note range and returns the noteMap (see above) of all the notes and the number of white keys in order to calculate the width of the piano
+export function generateNoteMapFromRange(startNote: string, endNote: string): [INoteMap, number] {
     const endOctave = getOctave(endNote);
     const startOctave = getOctave(startNote);
     const startNoteNameIndex = noteNames.indexOf(getNoteName(startNote));
     const endNoteNameIndex = noteNames.indexOf(getNoteName(endNote));
 
+    // Declare output data
     const noteMap: INoteMap = {};
     let whiteKeys = 0;
-    // go through each octave
+
+    // First octave start from `startNote` then use C for every other octave
+    let noteNameIndex = startNoteNameIndex;
+
+    // Go through each octave
     for (let octave = startOctave; octave <= endOctave; octave++) {
-        // if first octave start from `startNote` else use C
-        let noteNameIndex = octave === startOctave ? startNoteNameIndex : 0;
-
-        // go through each key
+        // Go through each key in the current octave
         while (noteNameIndex < noteNames.length) {
-            const reachedEndNote = octave === endOctave && noteNameIndex > endNoteNameIndex;
-            if (reachedEndNote) break;
-            const noteName = noteNames[noteNameIndex];
+            // If we reached the last note of the last octave, break out since we finished
+            if (octave === endOctave && noteNameIndex > endNoteNameIndex) {
+                break;
+            }
 
+            const noteName = noteNames[noteNameIndex];
             const isWhite = noteName.length === 1;
             noteMap[noteName + octave] = {
                 isWhite,
                 pressedColor: null,
                 isGhost: false,
             };
-            if (isWhite) whiteKeys++;
+
+            if (isWhite) {
+                whiteKeys++;
+            }
 
             noteNameIndex++;
         }
+
+        // Resets to C
+        noteNameIndex = 0;
     }
 
-    return { noteMap, whiteKeys };
+    return [noteMap, whiteKeys];
 }
