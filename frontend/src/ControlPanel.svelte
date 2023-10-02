@@ -1,12 +1,15 @@
 <script lang="ts" context="module">
     import { writable } from "svelte/store";
 
+    export type LabelType = "none" | "notes" | "keybinds";
+
     export class ControlPanelData {
         // Use a svelte store for each property to allow us to only update when those specific values change
         octaveShift = writable(0);
         sustain = writable(false);
         volume = writable(5);
-        noteRange = writable<[string, string]>(["C0", "C0"]);
+        noteRange = writable<[string, string]>(["C2", "C7"]);
+        labelType = writable<LabelType>("keybinds");
     }
 </script>
 
@@ -15,6 +18,7 @@
     import { MidiPlayer } from "./midi_player";
     import { SocketPlayer } from "./socket_player";
     import { getInstrument } from "./utils";
+    import spinner from "./spinner.svg";
 
     let roomName = "";
 
@@ -25,7 +29,7 @@
     export let socketPlayer: SocketPlayer;
 
     // We need to destructure these so that we can use svelte bind syntax ($)
-    let { noteRange, sustain, octaveShift, volume } = controlPanelData;
+    let { noteRange, sustain, octaveShift, volume, labelType } = controlPanelData;
     let { midiFile, midiIsPlaying, midiCurrentTime, midiSpeed, midiTotalTime } = midiPlayer;
     let { instrumentName, connected, connecting, connectError, connectedColorHues } = socketPlayer;
 
@@ -112,7 +116,7 @@
                     {/each}
                 </select>
                 {#await instrumentPromise}
-                    loading...
+                    <img src={spinner} alt="spinner" style="margin-left: 0.2rem; width: 1rem" />
                 {/await}
             </div>
 
@@ -127,6 +131,15 @@
                     <option data-range="C3,C6">Quater Size (37 keys)</option>
                     <option data-range="C4,B5">2 Octaves (24 keys)</option>
                     <option data-range="C4,B4">1 Octave (12 keys)</option>
+                </select>
+            </div>
+
+            <div>
+                <span>Labels</span>
+                <select bind:value={$labelType}>
+                    <option value="none">None</option>
+                    <option value="notes">Notes</option>
+                    <option value="keybinds">Key binds</option>
                 </select>
             </div>
         </div>
@@ -227,7 +240,7 @@
     }
 
     .row {
-        margin-bottom: 0.5rem;
+        margin-bottom: 1rem;
         display: flex;
     }
 

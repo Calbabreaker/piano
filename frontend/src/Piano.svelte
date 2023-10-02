@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { ControlPanelData } from "./ControlPanel.svelte";
+    import { ControlPanelData, type LabelType } from "./ControlPanel.svelte";
     import { MidiPlayer } from "./midi_player";
     import {
         generateNoteMapFromRange,
@@ -25,7 +25,7 @@
     let pressedMap = new Map<string, boolean>();
 
     export let controlPanelData: ControlPanelData;
-    let { noteRange, sustain, octaveShift, volume } = controlPanelData;
+    let { noteRange, sustain, octaveShift, volume, labelType } = controlPanelData;
 
     // Set play and stop note functions so that the midiPlayer can play notes on this piano
     export let midiPlayer: MidiPlayer;
@@ -159,6 +159,19 @@
             stopNote(note);
         }
     }
+
+    function showLabel(note: string, labelType: LabelType, octaveShift: number): string {
+        switch (labelType) {
+            case "none":
+                return "";
+            case "notes":
+                return getNoteName(note);
+            case "keybinds":
+                // 'Unshifts' the note and gets the keybind from the dictionary
+                note = getNoteName(note) + (getOctave(note) - octaveShift);
+                return noteToKeyBindKey[note] ?? "";
+        }
+    }
 </script>
 
 <svelte:window
@@ -190,9 +203,7 @@
                 on:pointerup={() => stopNote(note)}
                 style="--color-hue: {pressedColor}"
             >
-                <!-- 'Unshifts' the note and gets the keybind from the dictionary -->
-                {noteToKeyBindKey[getNoteName(note) + (getOctave(note) - $octaveShift)] ?? ""}
-                <!-- {getNoteName(note)} -->
+                {showLabel(note, $labelType, $octaveShift)}
             </div>
         {/each}
     </div>
