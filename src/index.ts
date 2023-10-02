@@ -6,7 +6,7 @@ import type {
     IClientData,
     IInstrumentChangeEvent,
 } from "./socket_events";
-import { InstrumentName, instrumentNames } from "./instrument_names";
+import { type InstrumentName, instrumentNames } from "./instrument_names";
 import { config } from "dotenv";
 config();
 
