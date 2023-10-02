@@ -168,6 +168,7 @@
     on:pointerdown={() => (mouseDown = true)}
     on:pointerup={() => (mouseDown = false)}
 />
+<!-- Have a container for the piano in order to get the full width/height of the piano -->
 <div class="piano-container" bind:this={pianoContainer}>
     <div class="piano" on:touchstart|preventDefault>
         <!-- Loop through all the notes in noteMap and create a div for each note -->
@@ -191,6 +192,7 @@
             >
                 <!-- 'Unshifts' the note and gets the keybind from the dictionary -->
                 {noteToKeyBindKey[getNoteName(note) + (getOctave(note) - $octaveShift)] ?? ""}
+                <!-- {getNoteName(note)} -->
             </div>
         {/each}
     </div>

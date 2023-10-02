@@ -13,9 +13,7 @@
 <script lang="ts">
     import { instrumentNames } from "../../backend/src/instrument_names";
     import { MidiPlayer } from "./midi_player";
-    import {
-        SocketPlayer
-    } from "./socket_player";
+    import { SocketPlayer } from "./socket_player";
     import { getInstrument } from "./utils";
 
     let roomName = "";
@@ -29,7 +27,11 @@
     // We need to destructure these so that we can use svelte bind syntax ($)
     let { noteRange, sustain, octaveShift, volume } = controlPanelData;
     let { midiFile, midiIsPlaying, midiCurrentTime, midiSpeed, midiTotalTime } = midiPlayer;
-    let {instrumentName, connected, connecting, connectError, connectedColorHues} = socketPlayer;
+    let { instrumentName, connected, connecting, connectError, connectedColorHues } = socketPlayer;
+
+    octaveShift.subscribe((octaveShift) => {
+        return octaveShift ?? 0;
+    });
 
     function onLoad() {
         // Gets the ?room=[room_name] from the url and connects to a room
@@ -47,11 +49,15 @@
     }
 
     function onKeyDown(event: KeyboardEvent) {
+        if ((event.target as HTMLElement).tagName === "INPUT") {
+            return;
+        }
+
         if (event.code === "Space") {
             $sustain = true;
         }
 
-        if (event.code === "ControlLeft") {
+        if (event.code === "ControlLeft" || event.code == "AltRight") {
             $octaveShift -= 1;
         } else if (event.code === "AltLeft" || event.code == "ControlRight") {
             $octaveShift += 1;
@@ -74,25 +80,32 @@
 <svelte:window on:keydown={onKeyDown} on:keyup={onKeyUp} on:load={onLoad} />
 <div class="control-panel">
     <div class="row">
-        <div>
+        <div class="option-list">
             <div title="Shortcut: space">
-                <span>Sustain:</span>
+                <span>Sustain</span>
                 <input type="checkbox" bind:checked={$sustain} />
             </div>
 
             <div title="Shortcut: left ctrl +, left alt or right ctrl -">
-                <span>Octave Shift:</span>
+                <span>Octave Shift</span>
                 <input type="number" min="-3" max="3" bind:value={$octaveShift} />
             </div>
 
             <div>
-                <span>Volume:</span>
-                <input type="range" min="0" max="10" step="0.1" bind:value={$volume} />
+                <span>Volume</span>
+                <input
+                    type="range"
+                    min="0"
+                    max="10"
+                    step="0.1"
+                    bind:value={$volume}
+                    style="width: 8rem"
+                />
                 <input type="number" bind:value={$volume} />
             </div>
 
             <div>
-                <span>Instrument:</span>
+                <span>Instrument</span>
                 <select bind:value={$instrumentName}>
                     {#each instrumentNames as name}
                         <option>{name}</option>
@@ -103,22 +116,24 @@
                 {/await}
             </div>
 
-            <span>Size:</span>
-            <select
-                on:change={(event) => sizeSelectChange(event.currentTarget)}
-                use:sizeSelectChange
-            >
-                <option data-range="A0,C8">Full size (88 keys)</option>
-                <option data-range="C2,C7" selected={true}>Half size (61 keys)</option>
-                <option data-range="C3,C6">Quater Size (37 keys)</option>
-                <option data-range="C4,B5">2 Octaves (24 keys)</option>
-                <option data-range="C4,B4">1 Octave (12 keys)</option>
-            </select>
+            <div>
+                <span>Size</span>
+                <select
+                    on:change={(event) => sizeSelectChange(event.currentTarget)}
+                    use:sizeSelectChange
+                >
+                    <option data-range="A0,C8">Full size (88 keys)</option>
+                    <option data-range="C2,C7" selected={true}>Half size (61 keys)</option>
+                    <option data-range="C3,C6">Quater Size (37 keys)</option>
+                    <option data-range="C4,B5">2 Octaves (24 keys)</option>
+                    <option data-range="C4,B4">1 Octave (12 keys)</option>
+                </select>
+            </div>
         </div>
 
         <div>
+            <p>Play a midi:</p>
             <div>
-                <p>Play a midi:</p>
                 <input
                     type="file"
                     accept=".midi,.mid"
@@ -126,7 +141,7 @@
                 />
             </div>
 
-            <div>
+            <div style="margin: 0.2rem 0 0.2rem 0">
                 {#if $midiIsPlaying}
                     <button on:click={() => ($midiIsPlaying = false)}>Pause</button>
                 {:else}
@@ -134,8 +149,9 @@
                 {/if}
                 <button
                     on:click={() => {
-                        $midiIsPlaying = false;
                         $midiCurrentTime = 0;
+                        // Need to stop and start again to rebuild the up to index
+                        $midiIsPlaying = false;
                         setTimeout(() => ($midiIsPlaying = true), 100);
                     }}
                 >
@@ -144,8 +160,11 @@
             </div>
 
             <div>
-                Speed:<input type="range" min="0.01" max="4" step="0.01" bind:value={$midiSpeed} />
+                <span>Speed</span>
+                <input type="range" min="0.01" max="4" step="0.01" bind:value={$midiSpeed} />
                 <input type="number" min="0.01" bind:value={$midiSpeed} />times<br />
+            </div>
+            <div>
                 <input
                     type="range"
                     min="0"
@@ -187,7 +206,9 @@
                 {/if}
             {/each}
         {:else}
-            <button on:click={() => socketPlayer.connect(roomName)} disabled={$connecting}>Join</button>
+            <button on:click={() => socketPlayer.connect(roomName)} disabled={$connecting}>
+                Join
+            </button>
         {/if}
 
         {#if $connectError}
@@ -210,7 +231,21 @@
         display: flex;
     }
 
-    .row div {
+    .row > div > div {
+        padding-bottom: 0.2rem;
+    }
+
+    .option-list > div {
+        display: flex;
+    }
+
+    .option-list span {
+        width: 7rem;
+        margin-bottom: auto;
+        margin-top: auto;
+    }
+
+    .option-list {
         margin-right: 2rem;
     }
 
@@ -229,7 +264,7 @@
     }
 
     p {
-        margin-bottom: 0.5rem;
+        margin-bottom: 0.6rem;
         margin-top: 0;
     }
 

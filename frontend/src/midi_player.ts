@@ -57,6 +57,7 @@ export class MidiPlayer {
                 this.tracksIndexUpTo[trackI] = noteIndex;
             });
 
+            // Create the playing loop
             let lastFrameTime = performance.now();
             this.playIntervalID = setInterval(() => {
                 const now = performance.now();
@@ -129,7 +130,7 @@ export class MidiPlayer {
 
     private connectMidiDevices() {
         this.midiAccess.inputs.forEach((input) => {
-            input.onmidimessage = this.onMidiEvent;
+            input.onmidimessage = this.onMidiEvent.bind(this);
         });
     }
 

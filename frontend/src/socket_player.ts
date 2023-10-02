@@ -40,7 +40,6 @@ export class SocketPlayer {
         // "0" is the threadID while playing offline
         this.threadMap.set("0", this.originalThread);
 
-        console.log(this.threadMap);
         this.instrumentName.subscribe((instrumentName) => {
             if (this.socket) {
                 this.socket.emit("instrument_change", { instrumentName } as IInstrumentChangeEvent);
@@ -58,13 +57,13 @@ export class SocketPlayer {
     }
 
     addThread({ socketID, colorHue, instrumentName }: IClientData) {
-        // Keep the audioNodeMap the same in order for Piano component to stop notes correctly
         this.threadMap.set(socketID, {
             audioNodeMap:
                 socketID === this.socket.id ? this.originalThread.audioNodeMap : new Map(),
             colorHue,
         });
 
+        // Need to do this get set thing to update the map
         this.connectedColorHues.set(get(this.connectedColorHues).set(socketID, colorHue));
 
         if (instrumentName) {

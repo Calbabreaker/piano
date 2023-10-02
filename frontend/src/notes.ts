@@ -109,6 +109,7 @@ export function getNoteName(note: string): string {
     return note.substring(0, note.length - 1);
 }
 
+// Converts a midi note to a standard note
 export function midiToNote(midi: number): string {
     const octave = Math.floor(midi / 12) - 1;
     const note = noteNames[midi % 12];
