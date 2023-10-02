@@ -1,6 +1,6 @@
 import { Server } from "socket.io";
 import { createServer } from "http";
-import {
+import type {
     IPlayNoteEvent,
     IStopNoteEvent,
     IClientData,
@@ -33,7 +33,7 @@ const roomClientMap: Map<string, IClientData[]> = new Map();
 io.on("connection", (socket) => {
     const roomName = socket.handshake.query?.roomName;
     const instrumentName = socket.handshake.query?.instrumentName;
-    
+
     // If the queries are not valid then immediatly disconnect the user since that should not be happening
     if (
         typeof roomName !== "string" ||
@@ -68,6 +68,8 @@ io.on("connection", (socket) => {
     connectedClients.push(clientData);
     io.to(roomName).emit("client_connect", clientData);
 
+    // These listeners listen for a client to send that event and then broadcasts it to all other clients in the current room
+    // If any of the sent data is invalid it immediately kicks the client
     socket.on("instrument_change", (event) => {
         const instrumentEvent = event as IInstrumentChangeEvent;
         if (!instrumentNameMap[instrumentEvent?.instrumentName]) {

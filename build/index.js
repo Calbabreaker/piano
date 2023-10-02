@@ -53,6 +53,8 @@ io.on("connection", (socket) => {
     };
     connectedClients.push(clientData);
     io.to(roomName).emit("client_connect", clientData);
+    // These listeners listen for a client to send that event and then broadcasts it to all other clients in the current room
+    // If any of the sent data is invalid it immediately kicks the client
     socket.on("instrument_change", (event) => {
         const instrumentEvent = event;
         if (!instrumentNameMap[instrumentEvent === null || instrumentEvent === void 0 ? void 0 : instrumentEvent.instrumentName]) {
