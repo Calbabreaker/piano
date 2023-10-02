@@ -172,17 +172,22 @@
                 </button>
             </div>
 
-            <div
-                title="Double click to set speed to normal"
-                on:click={(e) => {
-                    // Detail == 2 means double click
-                    if (e.detail == 2) {
-                        $midiSpeed = 1;
-                    }
-                }}
-            >
+            <div>
                 <span>Speed</span>
-                <input type="range" min="0.01" max="4" step="0.01" bind:value={$midiSpeed} />
+                <input
+                    type="range"
+                    min="0.01"
+                    max="4"
+                    step="0.01"
+                    bind:value={$midiSpeed}
+                    title="Double click to set speed to normal"
+                    on:click={(e) => {
+                        // Detail == 2 means double click
+                        if (e.detail == 2) {
+                            $midiSpeed = 1;
+                        }
+                    }}
+                />
                 <input type="number" min="0.01" bind:value={$midiSpeed} />times<br />
             </div>
             <div>
