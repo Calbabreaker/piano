@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <title></title>
+        <script
+            src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.1/socket.io.js"
+            integrity="sha512-Z6C1p1NIexPj5MsVUunW4pg7uMX6/TT3CUVldmjXx2kpip1eZcrAnxIusDxyFIikyM9A61zOVNgvLr/TGudOQg=="
+            crossorigin="anonymous"
+            referrerpolicy="no-referrer"
+        ></script>
+    </head>
+    <body>
+        <button onclick="startTearing()">startTearing</button>
+        <span id="total"></span>
+        <script>
+            const BACKEND_HOST = "http://localhost:5000";
+
+            let sockets = [];
+            showTotal();
+
+            const noteNames = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
+
+            function randomNote(midi) {
+                const octave = Math.floor(Math.random() * 8 + 1);
+                const note = noteNames[Math.floor(Math.random() * noteNames.length)];
+                return note + octave;
+            }
+
+            function startClient() {
+                socket = io(BACKEND_HOST, {
+                    query: {
+                        roomName: Math.floor(Math.random() * 10).toString(),
+                        // roomName: "",
+                        instrumentName: "acoustic_grand_piano",
+                    },
+                });
+
+                socket.on("connect", () => {
+                    sockets.push(socket);
+                    showTotal();
+                });
+            }
+
+            function showTotal() {
+                document.getElementById("total").textContent = "Total: " + sockets.length;
+            }
+
+            function startTearing() {
+                for (let i = 0; i < 10; i++) {
+                    startClient();
+                }
+
+                setInterval(() => {
+                    for (let i = sockets.length - 1; i >= 0; i--) {
+                        if (sockets[i].disconnected) {
+                            sockets.splice(i, 1);
+                            continue;
+                        }
+
+                        sockets[i].send("play_note", { note: randomNote(), volume: 1 });
+                    }
+                }, 100);
+            }
+        </script>
+    </body>
+</html>

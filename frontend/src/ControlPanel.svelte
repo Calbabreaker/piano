@@ -116,7 +116,7 @@
                     {/each}
                 </select>
                 {#await instrumentPromise}
-                    <img src={spinner} alt="spinner" style="margin-left: 0.2rem; width: 1rem" />
+                    <img src={spinner} alt="spinner" />
                 {/await}
             </div>
 
@@ -172,7 +172,15 @@
                 </button>
             </div>
 
-            <div>
+            <div
+                title="Double click to set speed to normal"
+                on:click={(e) => {
+                    // Detail == 2 means double click
+                    if (e.detail == 2) {
+                        $midiSpeed = 1;
+                    }
+                }}
+            >
                 <span>Speed</span>
                 <input type="range" min="0.01" max="4" step="0.01" bind:value={$midiSpeed} />
                 <input type="number" min="0.01" bind:value={$midiSpeed} />times<br />
@@ -228,6 +236,7 @@
             <span class="error">{$connectError}</span>
         {:else if $connecting}
             <span>Connecting...</span>
+            <img src={spinner} alt="spinner" />
         {/if}
     </div>
 </div>
@@ -292,5 +301,10 @@
         width: 1rem;
         height: 1rem;
         margin-bottom: -5px;
+    }
+
+    img {
+        margin-left: 0.2rem;
+        width: 1rem;
     }
 </style>
