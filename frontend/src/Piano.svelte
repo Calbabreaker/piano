@@ -12,7 +12,6 @@
     import type { Player } from "soundfont-player";
     import type { SocketPlayer } from "./socket_player";
     import { onMount } from "svelte";
-    import { get } from "svelte/store";
 
     let mouseDown: boolean = false;
     let whiteKeys: number;
@@ -129,6 +128,7 @@
 
     function recalcWidth(numWhiteKeys: number) {
         if (pianoContainer) {
+            // A key's height is 6 times its width so we divide the total area by 6 to get the maximum width for a key
             const maxWidth = pianoContainer.clientHeight / 6;
             const width = pianoContainer.offsetWidth / numWhiteKeys;
             pianoContainer.style.setProperty("--white-key-width", `${Math.min(width, maxWidth)}px`);
@@ -171,11 +171,10 @@
 <div class="piano-container" bind:this={pianoContainer}>
     <div class="piano" on:touchstart|preventDefault>
         <!-- Loop through all the notes in noteMap and create a div for each note -->
-        {#each Object.entries(noteMap) as [note, { isWhite, pressedColor, isGhost }]}
+        {#each Object.entries(noteMap) as [note, { isWhite, pressedColor }]}
             <div
                 class="key {isWhite ? 'white' : 'black'}"
                 class:pressed={pressedColor !== null}
-                class:ghost={isGhost && pressedColor === null}
                 on:pointerdown={(event) => {
                     // Prevents holding selecting things on IOS
                     event.currentTarget.releasePointerCapture(event.pointerId);
@@ -190,6 +189,7 @@
                 on:pointerup={() => stopNote(note)}
                 style="--color-hue: {pressedColor}"
             >
+                <!-- 'Unshifts' the note and gets the keybind from the dictionary -->
                 {noteToKeyBindKey[getNoteName(note) + (getOctave(note) - $octaveShift)] ?? ""}
             </div>
         {/each}
@@ -207,11 +207,29 @@
         display: flex;
     }
 
+    .white {
+        --width: var(--white-key-width);
+        background-color: white;
+        color: hsl(0, 0%, 20%);
+    }
+
+    .black {
+        /* Make the black key be proportionaly smaller than the white key */
+        --width: calc(var(--white-key-width) / 1.67);
+        color: hsl(0, 0%, 80%);
+        background-color: hsl(0, 0%, 10%);
+        margin-left: calc(var(--width) / -2);
+        margin-right: calc(var(--width) / -2);
+        z-index: 2;
+    }
+
     .key {
+        border: 1px solid #222;
         height: calc(var(--width) * 6);
         width: var(--width);
         border-radius: 0px 0px 4px 4px;
-        box-shadow: 0px 5px 1px rgba(32, 32, 32, 0.2);
+        --shadow-height: calc(var(--width) / 14);
+        box-shadow: 0px var(--shadow-height) 1px rgba(32, 32, 32, 0.2);
         user-select: none;
         display: flex;
         align-items: flex-end;
@@ -220,35 +238,18 @@
         font-size: calc(var(--width) / 1.5);
     }
 
-    .key:hover {
-        background-color: hsl(183, 40%, 70%);
-        border: hsl(183, 20%, 40%) solid 1px;
+    .black:hover {
+        background-color: hsl(0, 0%, 20%);
+    }
+
+    .white:hover {
+        background-color: hsl(0, 0%, 90%);
     }
 
     .pressed {
         background-color: hsl(var(--color-hue), 60%, 50%) !important;
         border: hsl(var(--color-hue), 60%, 40%) solid 2px !important;
-        transform: translateY(2.5%);
+        transform: translateY(var(--shadow-height));
         box-shadow: 0px 0px 1px rgba(32, 32, 32, 0.2);
-    }
-
-    .ghost {
-        background-color: hsl(0, 0%, 80%) !important;
-        border: hsl(0, 0%, 70%) solid 2px !important;
-    }
-
-    .white {
-        --width: var(--white-key-width);
-        background-color: white;
-        border: 1px solid #333;
-    }
-
-    .black {
-        --width: calc(var(--white-key-width) / 1.6666);
-        background-color: hsl(0, 0%, 10%);
-        margin-left: calc(var(--width) / -2);
-        margin-right: calc(var(--width) / -2);
-        z-index: 2;
-        color: white;
     }
 </style>

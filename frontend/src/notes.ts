@@ -120,7 +120,6 @@ export interface INote {
     // A string that will be a hsl color value of its pressed color if the note is pressed
     // This is to allow multiplayer support from different clients with different colors
     pressedColor: string | null;
-    isGhost: boolean;
 }
 
 export type INoteMap = { [key: string]: INote | undefined };
@@ -153,7 +152,6 @@ export function generateNoteMapFromRange(startNote: string, endNote: string): [I
             noteMap[noteName + octave] = {
                 isWhite,
                 pressedColor: null,
-                isGhost: false,
             };
 
             if (isWhite) {
