@@ -113,12 +113,15 @@
         }
     });
 
-    // Unpress all pressed keys to prevent 'phantom notes' when the octave changed
-    octaveShift.subscribe(() => {
+    // Unpress all held keys to prevent notes being continuely pressed when the octave changed
+    function unpressHeld() {
         for (const note of pressedMap.keys()) {
             socketPlayer.stopNote(note, $sustain);
         }
-    });
+    }
+
+    octaveShift.subscribe(unpressHeld);
+    noteShift.subscribe(unpressHeld);
 
     function recalcWidth(numWhiteKeys: number) {
         if (pianoContainer) {
