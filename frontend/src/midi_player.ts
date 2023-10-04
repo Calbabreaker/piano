@@ -6,6 +6,7 @@ import { binarySearch, swapRemove } from "./utils";
 
 export class MidiPlayer {
     // These need to use svelte store so that the ui can update dynamically
+    // And so we can listen when it changes
     midiIsPlaying = writable(false);
     midiCurrentTime = writable(0); // time in seconds
     midiTotalTime = writable(0); // time in seconds

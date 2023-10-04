@@ -129,5 +129,5 @@ export const instrumentNames = [
     "xylophone",
 ] as const;
 
-type InstrumentTuple = typeof instrumentNames;
-export type InstrumentName = InstrumentTuple[number];
+// This allows us to have a type that can only be one of instrumentNames
+export type InstrumentName = (typeof instrumentNames)[number];

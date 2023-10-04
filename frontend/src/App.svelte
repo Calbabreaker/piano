@@ -4,6 +4,7 @@
     import { MidiPlayer } from "./midi_player";
     import { SocketPlayer } from "./socket_player";
 
+    // Seperate functionallity to seperate classes for better modularity
     const controlPanelData = new ControlPanelData();
     const midiPlayer = new MidiPlayer();
     const socketPlayer = new SocketPlayer();
@@ -13,11 +14,3 @@
     <ControlPanel {controlPanelData} {midiPlayer} {socketPlayer} />
     <Piano {controlPanelData} {midiPlayer} {socketPlayer} />
 </main>
-
-<style>
-    main {
-        height: 100%;
-        display: flex;
-        flex-flow: column;
-    }
-</style>

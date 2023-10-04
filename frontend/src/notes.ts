@@ -116,6 +116,11 @@ export function midiToNote(midi: number): string {
     return note + octave;
 }
 
+export function noteToMidi(note: string): number {
+    const noteIndex = noteNames.indexOf(getNoteName(note));
+    return (getOctave(note) + 1) * 12 + noteIndex;
+}
+
 export interface INote {
     isWhite: boolean;
     // A string that will be a hsl color value of its pressed color if the note is pressed

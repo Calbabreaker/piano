@@ -1,11 +1,14 @@
 <script lang="ts" context="module">
     import { writable } from "svelte/store";
 
-    export type LabelType = "none" | "notes" | "keybinds";
+    const labels = ["none", "notes", "keybinds"] as const;
+    export type LabelType = (typeof labels)[number];
 
+    // Class to pass around the data needed for controling the piano
     export class ControlPanelData {
         // Use a svelte store for each property to allow us to only update when those specific values change
         octaveShift = writable(0);
+        noteShift = writable(0);
         sustain = writable(false);
         volume = writable(5);
         noteRange = writable<[string, string]>(["C2", "C7"]);
@@ -19,6 +22,7 @@
     import { SocketPlayer } from "./socket_player";
     import { getInstrument } from "./utils";
     import spinner from "./spinner.svg";
+    import { snakeToTitleCase } from "./utils";
 
     let roomName = "";
 
@@ -29,7 +33,7 @@
     export let socketPlayer: SocketPlayer;
 
     // We need to destructure these so that we can use svelte bind syntax ($)
-    let { noteRange, sustain, octaveShift, volume, labelType } = controlPanelData;
+    let { noteRange, sustain, noteShift, octaveShift, volume, labelType } = controlPanelData;
     let { midiFile, midiIsPlaying, midiCurrentTime, midiSpeed, midiTotalTime } = midiPlayer;
     let { instrumentName, connected, connecting, connectError, connectedColorHues } = socketPlayer;
 
@@ -57,22 +61,44 @@
             return;
         }
 
-        if (event.code === "Space") {
-            $sustain = true;
+        switch (event.code) {
+            case "space":
+                $sustain = true;
+                break;
+            case "ControlLeft":
+                $noteShift -= 1;
+                break;
+            case "AltLeft":
+                $noteShift += 1;
+                break;
+            case "AltRight":
+                $octaveShift -= 1;
+                break;
+            case "ControlRight":
+                $octaveShift += 1;
+                break;
         }
+    }
 
-        if (event.code === "ControlLeft" || event.code == "AltRight") {
-            $octaveShift -= 1;
-        } else if (event.code === "AltLeft" || event.code == "ControlRight") {
+    noteShift.subscribe(() => {
+        // Move to the next octave if noteShift shifted 12 times
+        if ($noteShift >= 12) {
             $octaveShift += 1;
+            $noteShift = 0;
+        } else if ($noteShift <= -12) {
+            $octaveShift -= 1;
+            $noteShift = 0;
         }
+    });
 
+    octaveShift.subscribe(() => {
+        // Wrap around
         if ($octaveShift < -3) {
             $octaveShift = 3;
         } else if ($octaveShift > 3) {
             $octaveShift = -3;
         }
-    }
+    });
 
     function onKeyUp(event: KeyboardEvent) {
         if (event.code === "Space") {
@@ -90,9 +116,29 @@
                 <input type="checkbox" bind:checked={$sustain} />
             </div>
 
-            <div title="Shortcut: left ctrl +, left alt or right ctrl -">
-                <span>Octave Shift</span>
-                <input type="number" min="-3" max="3" bind:value={$octaveShift} />
+            <div>
+                <span
+                    title="Double click to reset"
+                    on:click={(e) => {
+                        // detail == 2 means double click
+                        if (e.detail == 2) {
+                            $noteShift = 0;
+                            $octaveShift = 0;
+                        }
+                    }}
+                >
+                    Tranpose
+                </span>
+                <input
+                    title="Note shift (shortcut: left ctrl + left alt)"
+                    type="number"
+                    bind:value={$noteShift}
+                />
+                <input
+                    title="Octave shift (shortcut: right alt + right ctrl)"
+                    type="number"
+                    bind:value={$octaveShift}
+                />
             </div>
 
             <div>
@@ -105,6 +151,7 @@
                     bind:value={$volume}
                     style="width: 8rem"
                 />
+                <!-- We use a number input instead of a setting the value directly to allow the user to go above the limit -->
                 <input type="number" bind:value={$volume} />
             </div>
 
@@ -112,7 +159,7 @@
                 <span>Instrument</span>
                 <select bind:value={$instrumentName}>
                     {#each instrumentNames as name}
-                        <option>{name}</option>
+                        <option value={name}>{snakeToTitleCase(name)}</option>
                     {/each}
                 </select>
                 {#await instrumentPromise}
@@ -137,9 +184,9 @@
             <div>
                 <span>Labels</span>
                 <select bind:value={$labelType}>
-                    <option value="none">None</option>
-                    <option value="notes">Notes</option>
-                    <option value="keybinds">Key binds</option>
+                    {#each labels as label}
+                        <option value={label}>{snakeToTitleCase(label)}</option>
+                    {/each}
                 </select>
             </div>
         </div>
@@ -182,7 +229,7 @@
                     bind:value={$midiSpeed}
                     title="Double click to set speed to normal"
                     on:click={(e) => {
-                        // Detail == 2 means double click
+                        // detail == 2 means double click
                         if (e.detail == 2) {
                             $midiSpeed = 1;
                         }

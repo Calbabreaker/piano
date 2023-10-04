@@ -37,3 +37,10 @@ export function swapRemove<T>(array: T[], i: number) {
     array[i] = array[array.length - 1];
     array.pop();
 }
+
+// Converts "snake_case" to "Title Case"
+export function snakeToTitleCase(str: string): string {
+    const words = str.split("_");
+    const titleCasedWords = words.map((word) => word.charAt(0).toUpperCase() + word.slice(1));
+    return titleCasedWords.join(" ");
+}

@@ -6,7 +6,9 @@
         getNoteName,
         getOctave,
         keyBinds,
+        midiToNote,
         noteToKeyBindKey,
+        noteToMidi,
     } from "./notes";
     import type { INoteMap } from "./notes";
     import type { Player } from "soundfont-player";
@@ -25,7 +27,7 @@
     let pressedMap = new Map<string, boolean>();
 
     export let controlPanelData: ControlPanelData;
-    let { noteRange, sustain, octaveShift, volume, labelType } = controlPanelData;
+    let { noteRange, sustain, noteShift, octaveShift, volume, labelType } = controlPanelData;
 
     // Set play and stop note functions so that the midiPlayer can play notes on this piano
     export let midiPlayer: MidiPlayer;
@@ -68,10 +70,10 @@
         [noteMap, whiteKeys] = generateNoteMapFromRange(range[0], range[1]);
     });
 
-    // Gets the note with the octave shift applied
+    // Gets the note with the note shift and octave shift applied
     function getShiftedNote(note: string): string {
-        const octave = getOctave(note) + $octaveShift;
-        return getNoteName(note) + octave;
+        const midi = noteToMidi(note) + $noteShift + $octaveShift * 12;
+        return midiToNote(midi);
     }
 
     // These functions relay the playing to the socket player
@@ -80,10 +82,6 @@
 
         // Only play if a note isn't already being held
         if (!pressedMap.has(realNote)) {
-            if (noteMap[note]) {
-                noteMap[note].isGhost = true;
-            }
-
             pressedMap.set(realNote, true);
             socketPlayer.playNote(realNote, $volume * velocity);
         }
@@ -92,10 +90,6 @@
     function stopNote(note: string) {
         const realNote = getShiftedNote(note);
         if (pressedMap.has(realNote)) {
-            if (noteMap[note]) {
-                noteMap[note].isGhost = false;
-            }
-
             pressedMap.delete(realNote);
             socketPlayer.stopNote(realNote, $sustain);
         }
@@ -108,7 +102,7 @@
         }
     }
 
-    // Stop all notes when sustain turned off
+    // Stop all notes still playing when sustain turned off
     sustain.subscribe((sustain) => {
         if (!sustain) {
             for (const note of socketPlayer.originalThread.audioNodeMap.keys()) {
@@ -160,7 +154,13 @@
         }
     }
 
-    function showLabel(note: string, labelType: LabelType, octaveShift: number): string {
+    // We need to pass the control panel data stuff so that it gets called when that changes
+    function showLabel(
+        note: string,
+        labelType: LabelType,
+        noteShift: number,
+        octaveShift: number
+    ): string {
         switch (labelType) {
             case "none":
                 return "";
@@ -168,8 +168,8 @@
                 return getNoteName(note);
             case "keybinds":
                 // 'Unshifts' the note and gets the keybind from the dictionary
-                note = getNoteName(note) + (getOctave(note) - octaveShift);
-                return noteToKeyBindKey[note] ?? "";
+                const midi = noteToMidi(note) - noteShift - octaveShift * 12;
+                return noteToKeyBindKey[midiToNote(midi)] ?? "";
         }
     }
 </script>
@@ -203,7 +203,7 @@
                 on:pointerup={() => stopNote(note)}
                 style="--color-hue: {pressedColor}"
             >
-                {showLabel(note, $labelType, $octaveShift)}
+                {showLabel(note, $labelType, $noteShift, $octaveShift)}
             </div>
         {/each}
     </div>
