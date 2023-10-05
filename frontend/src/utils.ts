@@ -18,6 +18,10 @@ export function getInstrument(name: InstrumentName): Promise<Soundfont.Player> {
 
 // Thanks https://stackoverflow.com/questions/22697936/binary-search-in-javascript
 export function binarySearch<T>(array: T[], compareFunc: (elm: T) => number): number {
+    if (!array || array.length == 0) {
+        return 0;
+    }
+
     let left = 0;
     let right = array.length - 1;
     while (left != right) {

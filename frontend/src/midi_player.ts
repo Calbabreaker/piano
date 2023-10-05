@@ -1,7 +1,7 @@
 import { Midi, Track } from "@tonejs/midi";
 import type { Note, NoteConstructorInterface } from "@tonejs/midi/dist/Note";
 import { writable, get } from "svelte/store";
-import { midiToNote, noteToMidi } from "./notes";
+import { noteToMidi } from "./notes";
 import { binarySearch, swapRemove } from "./utils";
 
 // Play and record midi files
@@ -22,7 +22,7 @@ export class MidiPlayer {
     // This is used for when something needs to stop temporarly and start again
     lastStartFunc = () => {};
 
-    private tracksIndexUpTo: number[] = [];
+    private tracksIndexUpTo: number[] = []; // Stores the note index that we are up to when playing for every track
     private loopIntervalID: number;
     private playingHeldNotes: Note[] = [];
     private recordingHeldNotes = new Map<number, NoteConstructorInterface>();
@@ -51,6 +51,7 @@ export class MidiPlayer {
             // Stop playing once it reaches the end
             if (midiNow > get(this.midiTotalTime)) {
                 this.stop();
+                this.lastStartFunc = () => {};
             }
         });
 
@@ -193,12 +194,11 @@ export class MidiPlayer {
 
     // Find where we are up to for all the tracks based on the current time
     private recalcPlayIndex() {
-        this.midiData.tracks.forEach((track, trackI) => {
-            if (track.notes.length > 0) {
-                const currentTime = get(this.midiCurrentTime);
-                const noteIndex = binarySearch(track.notes, (note) => note.time - currentTime);
-                this.tracksIndexUpTo[trackI] = noteIndex;
-            }
+        this.midiData.tracks.forEach((track, i) => {
+            const currentTime = get(this.midiCurrentTime);
+
+            // We can binary search since the are all sorted
+            this.tracksIndexUpTo[i] = binarySearch(track.notes, (note) => note.time - currentTime);
         });
     }
 
@@ -228,7 +228,7 @@ export class MidiPlayer {
             }
         });
 
-        const checkAndPlayTrack = (track: Track, i: number) => {
+        const checkTracks = (track: Track, i: number) => {
             // Keep going through all notes that are behind the current time and play them to do simultaneous notes
             // and to catch up with any notes that were behind
             while (true) {
@@ -249,9 +249,9 @@ export class MidiPlayer {
 
         if (get(this.midiPlaySolo)) {
             const i = get(this.selectedMidiTrack);
-            checkAndPlayTrack(this.midiData.tracks[i], i);
+            checkTracks(this.midiData.tracks[i], i);
         } else {
-            this.midiData.tracks.forEach(checkAndPlayTrack);
+            this.midiData.tracks.forEach(checkTracks);
         }
     }
 }
