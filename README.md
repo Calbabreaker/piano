@@ -5,7 +5,7 @@ with a computer keyboard, mouse, midi keyboard, and touchscreen.
 
 Live demo at https://calbabreaker.github.io/piano.
 
-![2022-10-02_23-50](https://user-images.githubusercontent.com/57030377/193456251-ef1df795-774b-41b6-a47d-b37f5bc923c7.png)
+![2023-10-06_03-21](https://github.com/Calbabreaker/piano/assets/57030377/205beac0-3a74-4b30-9248-32c58e6e3ce6)
 
 ## Structure
 
