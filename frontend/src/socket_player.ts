@@ -11,75 +11,55 @@ import type {
 import type { InstrumentName } from "../../backend/src/instrument_names";
 import { getInstrument } from "./utils";
 
-export interface IThread {
-    audioNodeMap: Map<string, Player>;
+export class Client {
+    audioNodeMap = new Map<string, Player>();
     instrument?: Player;
+    instrumentName?: InstrumentName;
     colorHue: string;
+
+    constructor(colorHue: string) {
+        this.colorHue = colorHue;
+    }
+
+    async setInstrument(instrumentName: InstrumentName) {
+        this.instrumentName = instrumentName;
+        this.instrument = await getInstrument(instrumentName);
+    }
+
+    stopAudio(note: string) {
+        if (this.audioNodeMap.get(note)) {
+            this.audioNodeMap.get(note).stop();
+            this.audioNodeMap.delete(note);
+        }
+    }
+
+    playAudio(note: string, volume: number) {
+        if (this.instrument) {
+            this.stopAudio(note);
+            this.audioNodeMap.set(
+                note,
+                this.instrument.play(note, undefined, {
+                    gain: volume,
+                }),
+            );
+        }
+    }
 }
 
 export class SocketPlayer {
     // These need to use svelte store so that the ui can update dynamically
     connecting = writable(false);
     connectError = writable("");
-    instrumentName = writable<InstrumentName>("acoustic_grand_piano");
     connectedColorHues = writable<Map<string, string>>(new Map());
     connected = writable(false);
 
     // We need to use "threads" to allow for multiple users to play the same note
-    threadMap = new Map<string, IThread>();
-    originalThread: IThread = {
-        audioNodeMap: new Map(),
-        colorHue: "220",
-    };
+    clientMap = new Map<string, Client>();
+    localClient = new Client("220");
     socket: Socket | null = null;
 
-    onPlayNote: (event: IPlayNoteEvent, thread: IThread) => void;
-    onStopNote: (event: IStopNoteEvent, thread: IThread) => void;
-
-    constructor() {
-        // "0" is the threadID while playing offline
-        this.threadMap.set("0", this.originalThread);
-
-        this.instrumentName.subscribe((instrumentName) => {
-            if (this.socket) {
-                this.socket.emit("instrument_change", { instrumentName } as IInstrumentChangeEvent);
-            }
-            this.loadInstrument(instrumentName, this.socket?.id ?? "0");
-        });
-    }
-
-    async loadInstrument(instrumentName: InstrumentName, threadID: string) {
-        let instrument = await getInstrument(instrumentName);
-        let thread = this.threadMap.get(threadID);
-        if (thread) {
-            thread.instrument = instrument;
-        }
-    }
-
-    addThread({ socketID, colorHue, instrumentName }: IClientData) {
-        this.threadMap.set(socketID, {
-            audioNodeMap:
-                socketID === this.socket.id ? this.originalThread.audioNodeMap : new Map(),
-            colorHue,
-        });
-
-        // Need to do this get set thing to update the map
-        this.connectedColorHues.set(get(this.connectedColorHues).set(socketID, colorHue));
-
-        if (instrumentName) {
-            this.loadInstrument(instrumentName, socketID);
-        }
-    }
-
-    // Clean things up when disconnecting
-    clean() {
-        this.socket.removeAllListeners();
-        this.socket = null;
-        this.connecting.set(false);
-        this.connected.set(false);
-        this.threadMap.clear();
-        this.threadMap.set("0", this.originalThread);
-    }
+    onPlayNote: (event: IPlayNoteEvent, thread: Client) => void;
+    onStopNote: (event: IStopNoteEvent, thread: Client) => void;
 
     // Connects to a server using socketio and sets the listeners
     connect(roomName: string) {
@@ -100,7 +80,7 @@ export class SocketPlayer {
         this.connecting.set(true);
 
         this.socket = io(BACKEND_HOST, {
-            query: { roomName, instrumentName: get(this.instrumentName) },
+            query: { roomName, instrumentName: this.localClient.instrumentName },
             path: import.meta.env.VITE_BACKEND_PATH,
             reconnection: false,
             timeout: 1000 * 60, // 1 minute timeout
@@ -111,7 +91,7 @@ export class SocketPlayer {
             this.connectError.set("Failed to connect to server: " + err.message);
         });
 
-        // Non built-in error sent by server
+        // Non custom error message sent by server
         this.socket.on("error_message", (message: string) => {
             this.connectError.set(message);
         });
@@ -124,8 +104,8 @@ export class SocketPlayer {
         this.socket.on("connect", () => {
             this.connecting.set(false);
             this.connected.set(true);
-            this.threadMap.delete("0");
-            get(this.connectedColorHues).clear();
+
+            // Set the url to end in /?room=[name] also change the title
             history.replaceState({}, undefined, `?room=${roomName}`);
             document.title = `Room ${roomName} - Play Piano!`;
         });
@@ -137,15 +117,16 @@ export class SocketPlayer {
         });
 
         this.socket.on("play_note", (event: IPlayNoteEvent) => {
-            this.onPlayNote(event, this.threadMap.get(event.socketID));
+            this.onPlayNote(event, this.clientMap.get(event.socketID));
         });
 
         this.socket.on("stop_note", (event: IStopNoteEvent) => {
-            this.onStopNote(event, this.threadMap.get(event.socketID));
+            this.onStopNote(event, this.clientMap.get(event.socketID));
         });
 
-        this.socket.on("instrument_change", (event: IInstrumentChangeEvent) => {
-            this.loadInstrument(event.instrumentName, event.socketID);
+        this.socket.on("change_instrument", async (event: IInstrumentChangeEvent) => {
+            const thread = this.clientMap.get(event.socketID);
+            thread.setInstrument(event.instrumentName);
         });
 
         this.socket.on("client_connect", (data: IClientData) => {
@@ -162,28 +143,62 @@ export class SocketPlayer {
             const colorHues = get(this.connectedColorHues);
             colorHues.delete(socketID);
             this.connectedColorHues.set(colorHues);
-            this.threadMap.delete(socketID);
+            this.clientMap.delete(socketID);
         });
     }
 
-    // These functions send the note event to the server as well as calling the piano functions with the correct thread
+    // These functions send the note event to the server as well as calling the inner note play/stop functions with the local thread
     playNote(note: string, volume: number) {
         const noteEvent: IPlayNoteEvent = { note, volume };
+        this.onPlayNote(noteEvent, this.localClient);
+
         if (this.socket) {
             this.socket.emit("play_note", noteEvent);
         }
-
-        let thread = this.threadMap.get(this.socket?.id ?? "0");
-        this.onPlayNote(noteEvent, thread);
     }
 
     stopNote(note: string, sustain: boolean) {
         const noteEvent: IStopNoteEvent = { note, sustain };
+        this.onStopNote(noteEvent, this.localClient);
+
         if (this.socket) {
             this.socket.emit("stop_note", noteEvent);
         }
+    }
 
-        let thread = this.threadMap.get(this.socket?.id ?? "0");
-        this.onStopNote(noteEvent, thread);
+    async changeInstrument(instrumentName: InstrumentName) {
+        const event = { instrumentName } as IInstrumentChangeEvent;
+        if (this.socket) {
+            this.socket.emit("change_instrument", event);
+        }
+
+        await this.localClient.setInstrument(instrumentName);
+    }
+
+    private addThread({ socketID, colorHue, instrumentName }: IClientData) {
+        const colorHues = get(this.connectedColorHues);
+        colorHues.set(socketID, colorHue);
+        this.connectedColorHues.set(colorHues);
+
+        // If we're adding the local client, then just move over the localClientThread
+        if (socketID == this.socket.id) {
+            this.localClient.colorHue = colorHue;
+            this.clientMap.set(socketID, this.localClient);
+        } else {
+            const client = new Client(colorHue);
+            this.clientMap.set(socketID, client);
+            client.setInstrument(instrumentName);
+        }
+    }
+
+    // Clean and reset things when disconnecting
+    private clean() {
+        this.socket.removeAllListeners();
+        this.socket = null;
+        this.connecting.set(false);
+        this.connected.set(false);
+        this.clientMap.clear();
+        this.localClient.colorHue = "220";
+        get(this.connectedColorHues).clear();
     }
 }

@@ -4,14 +4,12 @@
     import {
         generateNoteMapFromRange,
         getNoteName,
-        getOctave,
         keyBinds,
         midiToNote,
         noteToKeyBindKey,
         noteToMidi,
     } from "./notes";
     import type { INoteMap } from "./notes";
-    import type { Player } from "soundfont-player";
     import type { SocketPlayer } from "./socket_player";
     import { onMount } from "svelte";
 
@@ -19,11 +17,11 @@
     let whiteKeys: number;
     let pianoContainer: HTMLDivElement;
 
-    // A map mapping a note name to some note state data include if it's pressed
+    // A map mapping a note name to some note state data
     let noteMap: INoteMap;
 
-    // This map allows us to know if the local user is pressing a key
-    // noteMap is unreliable here because other users (in multiplayer) could be pressing the same keys
+    // This map allows us to know if the local client is pressing a specific key
+    // noteMap is unreliable here because other client (in multiplayer) could be pressing the same keys
     let pressedMap = new Map<string, boolean>();
 
     export let controlPanelData: ControlPanelData;
@@ -39,29 +37,21 @@
     // These set the functions that do the actual playing using the instrument
     // SocketPlayer needs to handle when to play since it also might need to send the note event to the server
     // and find out which thread the current user is using to play
-    socketPlayer.onPlayNote = ({ note, volume }, thread) => {
+    socketPlayer.onPlayNote = ({ note, volume }, client) => {
         if (noteMap[note]) {
-            noteMap[note].pressedColor = thread.colorHue;
+            noteMap[note].pressedColor = client.colorHue;
         }
 
-        if (thread.instrument) {
-            stopAudioNode(note, thread.audioNodeMap);
-            thread.audioNodeMap.set(
-                note,
-                thread.instrument.play(note, undefined, {
-                    gain: volume,
-                })
-            );
-        }
+        client.playAudio(note, volume);
     };
 
-    socketPlayer.onStopNote = ({ note, sustain }, thread) => {
+    socketPlayer.onStopNote = ({ note, sustain }, client) => {
         if (noteMap[note]) {
             noteMap[note].pressedColor = null;
         }
 
         if (!sustain) {
-            stopAudioNode(note, thread.audioNodeMap);
+            client.stopAudio(note);
         }
     };
 
@@ -77,7 +67,7 @@
     }
 
     // These functions relay the playing to the socket player
-    function playNote(note: string, velocity: number) {
+    function playNote(note: string, velocity = 0.5) {
         const realNote = getShiftedNote(note);
 
         // Only play if a note isn't already being held
@@ -95,17 +85,10 @@
         }
     }
 
-    function stopAudioNode(note: string, audioNodeMap: Map<string, Player>) {
-        if (audioNodeMap.get(note)) {
-            audioNodeMap.get(note).stop();
-            audioNodeMap.delete(note);
-        }
-    }
-
     // Stop all notes still playing when sustain turned off
     sustain.subscribe((sustain) => {
         if (!sustain) {
-            for (const note of socketPlayer.originalThread.audioNodeMap.keys()) {
+            for (const note of socketPlayer.localClient.audioNodeMap.keys()) {
                 if (!pressedMap.get(note)) {
                     socketPlayer.stopNote(note, false);
                 }
@@ -146,7 +129,7 @@
         // If the keyBind exists and the user is not selected in a text box or something then play the note
         if (note && target.tagName !== "INPUT") {
             event.preventDefault();
-            playNote(note, 0.5);
+            playNote(note);
         }
     }
 
@@ -195,11 +178,11 @@
                 on:pointerdown={(event) => {
                     // Prevents holding selecting things on IOS
                     event.currentTarget.releasePointerCapture(event.pointerId);
-                    playNote(note, 0.5);
+                    playNote(note);
                 }}
                 on:pointerenter={() => {
                     if (mouseDown) {
-                        playNote(note, 0.5);
+                        playNote(note);
                     }
                 }}
                 on:pointerleave={() => stopNote(note)}

@@ -17,16 +17,14 @@
 </script>
 
 <script lang="ts">
-    import { instrumentNames } from "../../backend/src/instrument_names";
+    import { type InstrumentName, instrumentNames } from "../../backend/src/instrument_names";
     import { MidiPlayer } from "./midi_player";
     import { SocketPlayer } from "./socket_player";
-    import { getInstrument } from "./utils";
     import spinner from "./spinner.svg";
     import { snakeToTitleCase } from "./utils";
 
     let roomName = "";
-
-    $: instrumentPromise = getInstrument($instrumentName);
+    let instrumentName: InstrumentName = "acoustic_grand_piano";
 
     export let controlPanelData: ControlPanelData;
     export let midiPlayer: MidiPlayer;
@@ -35,11 +33,9 @@
     // We need to destructure these so that we can use svelte bind syntax ($)
     let { noteRange, sustain, noteShift, octaveShift, volume, labelType } = controlPanelData;
     let { midiFile, midiIsPlaying, midiCurrentTime, midiSpeed, midiTotalTime } = midiPlayer;
-    let { instrumentName, connected, connecting, connectError, connectedColorHues } = socketPlayer;
+    let { connected, connecting, connectError, connectedColorHues } = socketPlayer;
 
-    octaveShift.subscribe((octaveShift) => {
-        return octaveShift ?? 0;
-    });
+    $: instrumentPromise = socketPlayer.changeInstrument(instrumentName);
 
     function onLoad() {
         // Gets the ?room=[room_name] from the url and connects to a room
@@ -47,7 +43,7 @@
         const urlRoomName = urlParams.get("room");
         if (urlRoomName != null) {
             roomName = urlRoomName;
-            socketPlayer.connect(roomName);
+            socketPlayer.connect(roomName, instrumentName);
         }
     }
 
@@ -157,7 +153,7 @@
 
             <div>
                 <span>Instrument</span>
-                <select bind:value={$instrumentName}>
+                <select bind:value={instrumentName}>
                     {#each instrumentNames as name}
                         <option value={name}>{snakeToTitleCase(name)}</option>
                     {/each}
