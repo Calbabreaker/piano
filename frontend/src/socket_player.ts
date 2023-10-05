@@ -11,7 +11,8 @@ import type {
 import type { InstrumentName } from "../../backend/src/instrument_names";
 import { getInstrument } from "./utils";
 
-// We need to use "clients" to allow for multiple users to play the same note
+// Client represents a connected client and contains there own instrument and audio node map
+// to allow for multiple clients to play the same note at the same time
 export class Client {
     audioNodeMap = new Map<string, Player>();
     instrument?: Player;
@@ -44,6 +45,15 @@ export class Client {
                 }),
             );
         }
+    }
+
+    clean() {
+        // Stop all notes to prevent memory leak
+        for (const note of this.audioNodeMap.values()) {
+            note.stop();
+        }
+
+        this.audioNodeMap.clear();
     }
 }
 
@@ -143,6 +153,7 @@ export class SocketPlayer {
             const colorHues = get(this.connectedColorHues);
             colorHues.delete(socketID);
             this.connectedColorHues.set(colorHues);
+            this.clientMap.get(socketID).clean();
             this.clientMap.delete(socketID);
         });
     }
@@ -193,6 +204,10 @@ export class SocketPlayer {
 
     // Clean and reset things when disconnecting
     private clean() {
+        for (const client of this.clientMap.values()) {
+            client.clean();
+        }
+
         this.socket.removeAllListeners();
         this.socket = null;
         this.connecting.set(false);
