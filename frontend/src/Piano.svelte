@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { ControlPanelData, type LabelType } from "./ControlPanel.svelte";
+    import type { LabelType, ControlsData } from "./ControlsList.svelte";
     import { MidiPlayer } from "./midi_player";
     import {
         generateNoteMapFromRange,
@@ -24,8 +24,8 @@
     // noteMap is unreliable here because other client (in multiplayer) could be pressing the same keys
     let pressedMap = new Map<string, boolean>();
 
-    export let controlPanelData: ControlPanelData;
-    let { noteRange, sustain, noteShift, octaveShift, volume, labelType } = controlPanelData;
+    export let pianoControlsData: ControlsData;
+    let { noteRange, sustain, noteShift, octaveShift, volume, labelType } = pianoControlsData;
 
     // Set play and stop note functions so that the midiPlayer can play notes on this piano
     export let midiPlayer: MidiPlayer;

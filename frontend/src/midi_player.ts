@@ -4,6 +4,7 @@ import { writable, get } from "svelte/store";
 import { midiToNote, noteToMidi } from "./notes";
 import { binarySearch, swapRemove } from "./utils";
 
+// Play and record midi files
 export class MidiPlayer {
     // These need to use svelte stores so that the ui can update dynamically
     // And so we can listen when it changes
@@ -15,6 +16,7 @@ export class MidiPlayer {
     selectedMidiTrack = writable(0);
     midiData = new Midi();
     midiTracks = writable<Track[]>(this.midiData.tracks);
+    midiPlaySolo = writable(false);
 
     // Reference to the startRecording or startPlaying function, whatever was called last
     // This is used for when something needs to stop temporarly and start again
@@ -23,7 +25,6 @@ export class MidiPlayer {
     private tracksIndexUpTo: number[] = [];
     private loopIntervalID: number;
     private playingHeldNotes: Note[] = [];
-    private midiAccess: WebMidi.MIDIAccess;
     private recordingHeldNotes = new Map<number, NoteConstructorInterface>();
     private recoringMidiData: Midi | null = null;
     private midiLastStartTime = 0; // The midi time when startPlaying or startRecording was called for seeking back when stopping
@@ -41,10 +42,6 @@ export class MidiPlayer {
     }
 
     startPlaying() {
-        if (this.midiData.tracks.length == 0) {
-            return alert("There is nothing to play!");
-        }
-
         this.recalcPlayIndex();
 
         // Create the playing loop
@@ -155,9 +152,6 @@ export class MidiPlayer {
 
     saveFile() {
         this.stop();
-        if (this.midiData.tracks.length == 0) {
-            return alert("Nothing is recorded!");
-        }
 
         // Creates a url blob of the midi data and downloads the file automatically using a link tag
         const blob = new Blob([this.midiData.toArray()], { type: "application/octet-stream" });
@@ -234,7 +228,7 @@ export class MidiPlayer {
             }
         });
 
-        this.midiData.tracks.forEach((track, i) => {
+        const checkAndPlayTrack = (track: Track, i: number) => {
             // Keep going through all notes that are behind the current time and play them to do simultaneous notes
             // and to catch up with any notes that were behind
             while (true) {
@@ -251,6 +245,13 @@ export class MidiPlayer {
 
                 this.tracksIndexUpTo[i]++;
             }
-        });
+        };
+
+        if (get(this.midiPlaySolo)) {
+            const i = get(this.selectedMidiTrack);
+            checkAndPlayTrack(this.midiData.tracks[i], i);
+        } else {
+            this.midiData.tracks.forEach(checkAndPlayTrack);
+        }
     }
 }
