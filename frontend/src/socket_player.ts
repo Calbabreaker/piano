@@ -11,6 +11,7 @@ import type {
 import type { InstrumentName } from "../../backend/src/instrument_names";
 import { getInstrument } from "./utils";
 
+// We need to use "clients" to allow for multiple users to play the same note
 export class Client {
     audioNodeMap = new Map<string, Player>();
     instrument?: Player;
@@ -53,7 +54,6 @@ export class SocketPlayer {
     connectedColorHues = writable<Map<string, string>>(new Map());
     connected = writable(false);
 
-    // We need to use "threads" to allow for multiple users to play the same note
     clientMap = new Map<string, Client>();
     localClient = new Client("220");
     socket: Socket | null = null;

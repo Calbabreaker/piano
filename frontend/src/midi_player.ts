@@ -1,116 +1,241 @@
-import { Midi } from "@tonejs/midi";
-import type { Note } from "@tonejs/midi/dist/Note";
+import { Midi, Track } from "@tonejs/midi";
+import type { Note, NoteConstructorInterface } from "@tonejs/midi/dist/Note";
 import { writable, get } from "svelte/store";
-import { midiToNote } from "./notes";
+import { midiToNote, noteToMidi } from "./notes";
 import { binarySearch, swapRemove } from "./utils";
 
 export class MidiPlayer {
-    // These need to use svelte store so that the ui can update dynamically
+    // These need to use svelte stores so that the ui can update dynamically
     // And so we can listen when it changes
     midiIsPlaying = writable(false);
     midiCurrentTime = writable(0); // time in seconds
     midiTotalTime = writable(0); // time in seconds
-    midiFile = writable<File | undefined>();
     midiSpeed = writable(1);
+    midiIsRecording = writable(false);
+    selectedMidiTrack = writable(0);
+    midiData = new Midi();
+    midiTracks = writable<Track[]>(this.midiData.tracks);
+
+    // Reference to the startRecording or startPlaying function, whatever was called last
+    // This is used for when something needs to stop temporarly and start again
+    lastStartFunc = () => {};
 
     private tracksIndexUpTo: number[] = [];
-    private midiData: Midi | null = null;
-    private playIntervalID: number;
-    private heldNotes: Note[] = [];
+    private loopIntervalID: number;
+    private playingHeldNotes: Note[] = [];
     private midiAccess: WebMidi.MIDIAccess;
+    private recordingHeldNotes = new Map<number, NoteConstructorInterface>();
+    private recoringMidiData: Midi | null = null;
+    private midiLastStartTime = 0; // The midi time when startPlaying or startRecording was called for seeking back when stopping
 
     onPlayNote: (note: string, velocity: number) => void;
     onStopNote: (note: string) => void;
 
     constructor() {
-        // When the midiFile is changed, reset all the playing data and read in the new midiFile data
-        this.midiFile.subscribe((file) => {
-            this.midiIsPlaying.set(false);
-            this.midiTotalTime.set(0);
-            this.midiCurrentTime.set(0);
-            if (!file) {
-                this.midiData = null;
-                return;
-            }
+        // Update the total time whenver the track information changes
+        this.midiTracks.subscribe((tracks) => {
+            const totalTime = tracks.length == 0 ? 0 : this.midiData.duration;
+            this.midiTotalTime.set(totalTime);
+            this.midiCurrentTime.set(Math.min(totalTime, get(this.midiCurrentTime)));
+        });
+    }
 
-            const reader = new FileReader();
-            reader.onload = () => this.generatePlayData(reader.result as ArrayBuffer);
-            reader.readAsArrayBuffer(file);
+    startPlaying() {
+        if (this.midiData.tracks.length == 0) {
+            return alert("There is nothing to play!");
+        }
+
+        this.recalcPlayIndex();
+
+        // Create the playing loop
+        this.startLoop((midiNow) => {
+            this.onPlayUpdate(midiNow);
+
+            // Stop playing once it reaches the end
+            if (midiNow > get(this.midiTotalTime)) {
+                this.stop();
+            }
         });
 
-        this.midiIsPlaying.subscribe((isPlaying) => {
-            if (!isPlaying) {
-                clearInterval(this.playIntervalID);
-                this.heldNotes.forEach((note) => this.onStopNote(note.name));
-                this.heldNotes = [];
-                return;
-            }
+        this.midiIsPlaying.set(true);
+        this.lastStartFunc = this.startPlaying.bind(this);
+        this.midiLastStartTime = get(this.midiCurrentTime);
+    }
 
-            if (!this.midiData) {
-                this.midiIsPlaying.set(false);
-                return alert("No MIDI file selected!");
-            }
+    startRecording() {
+        this.stop();
 
-            // Find where we are up to for all the tracks based on the current time
-            this.midiData.tracks.forEach((track, trackI) => {
+        if (this.midiData.tracks.length == 0) {
+            this.addTrack();
+        }
+
+        // Remove the track the we're currently recording in since we're overwriting it
+        this.midiData.tracks[get(this.selectedMidiTrack)].notes = [];
+
+        // We need to clone the midiData since we're also playing the tracks at the same time
+        // This way we don't interfere with the playing
+        this.recoringMidiData = this.midiData.clone();
+
+        this.recalcPlayIndex();
+        this.startLoop((midiNow) => {
+            this.onPlayUpdate(midiNow);
+
+            // Increase total time as the time reaches the end
+            if (midiNow > get(this.midiTotalTime)) {
+                this.midiTotalTime.set(midiNow);
+            }
+        });
+
+        this.midiIsRecording.set(true);
+        this.lastStartFunc = this.startRecording.bind(this);
+        this.midiLastStartTime = get(this.midiCurrentTime);
+    }
+
+    // Stop playing or recording and resets
+    stop() {
+        clearInterval(this.loopIntervalID);
+        this.playingHeldNotes.forEach((note) => this.onStopNote(note.name));
+        this.playingHeldNotes = [];
+        this.midiIsPlaying.set(false);
+
+        // Set the midi data copy
+        if (this.recoringMidiData) {
+            this.midiData = this.recoringMidiData;
+            this.recoringMidiData = null;
+            this.midiTracks.set(this.midiData.tracks);
+        }
+
+        // Reset recording data
+        this.midiIsRecording.set(false);
+        this.recordingHeldNotes.clear();
+    }
+
+    recordPlayNote(note: string, velocity: number) {
+        if (get(this.midiIsRecording)) {
+            const midi = noteToMidi(note);
+            // Store the note and then later add it into the midi track when the note is release
+            this.recordingHeldNotes.set(midi, {
+                midi,
+                velocity,
+                time: get(this.midiCurrentTime),
+            });
+        }
+    }
+
+    recordStopNote(note: string) {
+        if (get(this.midiIsRecording)) {
+            const midi = noteToMidi(note);
+            const noteObject = this.recordingHeldNotes.get(midi);
+
+            if (noteObject) {
+                noteObject.duration = get(this.midiCurrentTime) - noteObject.time;
+                this.recoringMidiData.tracks[get(this.selectedMidiTrack)].addNote(noteObject);
+                this.recordingHeldNotes.delete(midi);
+            }
+        }
+    }
+
+    addTrack() {
+        const track = this.midiData.addTrack();
+        this.selectedMidiTrack.set(this.midiData.tracks.length - 1);
+        this.midiTracks.set(this.midiData.tracks);
+
+        const trackName = prompt("Enter the track name: ");
+        if (trackName) {
+            track.name = trackName;
+        }
+    }
+
+    deleteTrack() {
+        const selectedMidiTrack = get(this.selectedMidiTrack);
+        this.midiData.tracks.splice(selectedMidiTrack, 1);
+        this.selectedMidiTrack.set(Math.min(this.midiData.tracks.length - 1, selectedMidiTrack));
+        this.midiTracks.set(this.midiData.tracks);
+    }
+
+    saveFile() {
+        this.stop();
+        if (this.midiData.tracks.length == 0) {
+            return alert("Nothing is recorded!");
+        }
+
+        // Creates a url blob of the midi data and downloads the file automatically using a link tag
+        const blob = new Blob([this.midiData.toArray()], { type: "application/octet-stream" });
+        const url = URL.createObjectURL(blob);
+
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "record.midi";
+
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    }
+
+    setFile(file: File) {
+        if (!file) {
+            return;
+        }
+
+        this.stop();
+
+        // When the midiFile is changednd read in the new midiFile data
+        const reader = new FileReader();
+        reader.onload = () => {
+            this.midiData = new Midi(reader.result as ArrayBuffer);
+            this.midiTracks.set(this.midiData.tracks);
+        };
+        reader.readAsArrayBuffer(file);
+    }
+
+    // Stop playing/recording and jump back to when the user stared playing/recording
+    stopAndReseek() {
+        this.stop();
+        // Clear function reference
+        this.lastStartFunc = () => {};
+        this.midiCurrentTime.set(this.midiLastStartTime);
+    }
+
+    // Find where we are up to for all the tracks based on the current time
+    private recalcPlayIndex() {
+        this.midiData.tracks.forEach((track, trackI) => {
+            if (track.notes.length > 0) {
                 const currentTime = get(this.midiCurrentTime);
                 const noteIndex = binarySearch(track.notes, (note) => note.time - currentTime);
                 this.tracksIndexUpTo[trackI] = noteIndex;
-            });
-
-            // Create the playing loop
-            let lastFrameTime = performance.now();
-            this.playIntervalID = setInterval(() => {
-                const now = performance.now();
-                const delta = now - lastFrameTime;
-                lastFrameTime = now;
-                this.onUpdate((delta / 1000) * get(this.midiSpeed));
-            }, 10);
-        });
-
-        navigator.requestMIDIAccess().then((access) => {
-            this.midiAccess = access;
-            this.connectMidiDevices();
-            // Automatically connect midi devices as they plug in
-            access.onstatechange = () => {
-                this.connectMidiDevices();
-            };
-        });
-    }
-
-    private generatePlayData(readResult: ArrayBuffer) {
-        this.midiData = new Midi(readResult);
-
-        // Filter empty tracks
-        this.midiData.tracks = this.midiData.tracks.filter((track) => track.notes.length !== 0);
-
-        // Get total time by going through tracks
-        let totalTime = 0;
-        this.midiData.tracks.forEach((track) => {
-            const lastNote = track.notes[track.notes.length - 1];
-            const totalDuration = lastNote.time + lastNote.duration;
-            if (totalDuration > totalTime) {
-                totalTime = totalDuration;
             }
         });
-
-        this.midiTotalTime.set(totalTime);
     }
 
-    private onUpdate(deltaSecs: number) {
-        const midiNow = get(this.midiCurrentTime) + deltaSecs;
-        this.midiCurrentTime.set(midiNow);
+    // Starts a contiuous loop calling loopFunc every iteration with the current midi time
+    private startLoop(loopFunc: (midiNow: number) => void) {
+        let lastLoopTime = performance.now();
+        this.loopIntervalID = setInterval(() => {
+            const now = performance.now();
+            const delta = now - lastLoopTime;
 
+            // Caclute the midi current time (in seconds) scaled with the speed
+            const deltaSecs = (delta / 1000) * get(this.midiSpeed);
+            const midiNow = get(this.midiCurrentTime) + deltaSecs;
+            loopFunc(midiNow);
+
+            this.midiCurrentTime.set(midiNow);
+            lastLoopTime = now;
+        }, 10);
+    }
+
+    private onPlayUpdate(midiNow: number) {
         // Check and release held notes
-        this.heldNotes.forEach((note, i) => {
+        this.playingHeldNotes.forEach((note, i) => {
             if (midiNow > note.time + note.duration) {
                 this.onStopNote(note.name);
-                swapRemove(this.heldNotes, i);
+                swapRemove(this.playingHeldNotes, i);
             }
         });
 
         this.midiData.tracks.forEach((track, i) => {
-            // Keep going through all notes that are behind the current time to do simultaneous notes
+            // Keep going through all notes that are behind the current time and play them to do simultaneous notes
             // and to catch up with any notes that were behind
             while (true) {
                 const note = track.notes[this.tracksIndexUpTo[i]];
@@ -118,38 +243,14 @@ export class MidiPlayer {
                     break;
                 }
 
-                this.onPlayNote(note.name, note.velocity);
-                this.heldNotes.push(note);
+                // But don't play them if they're already completely played
+                if (note.time + note.duration > midiNow) {
+                    this.onPlayNote(note.name, note.velocity);
+                    this.playingHeldNotes.push(note);
+                }
+
                 this.tracksIndexUpTo[i]++;
             }
         });
-
-        if (midiNow > get(this.midiTotalTime)) {
-            this.midiIsPlaying.set(false);
-        }
-    }
-
-    private connectMidiDevices() {
-        this.midiAccess.inputs.forEach((input) => {
-            input.onmidimessage = this.onMidiEvent.bind(this);
-        });
-    }
-
-    private onMidiEvent(event: WebMidi.MIDIMessageEvent) {
-        const [command, key, velocity] = event.data;
-        // if (command != 258 && command != 248 && command != 254) console.log(event.data);
-
-        // These are the midi command ids for playing and stopping a note (uses all 16 midi channels)
-        // See https://computermusicresource.com/MIDI.Commands.html
-        if (command >= 144 && command <= 159) {
-            if (velocity == 0) {
-                this.onStopNote(midiToNote(key));
-            } else {
-                // Play notes with velocity mapped from 1 to 127 -> 0 to 1
-                this.onPlayNote(midiToNote(key), velocity / 127);
-            }
-        } else if (command >= 128 && command <= 143) {
-            this.onStopNote(midiToNote(key));
-        }
     }
 }

@@ -74,6 +74,11 @@
         if (!pressedMap.has(realNote)) {
             pressedMap.set(realNote, true);
             socketPlayer.playNote(realNote, $volume * velocity);
+
+            // We check if the callee is not the midiPlayer so that it doesn't record itself playing the note
+            if (this !== midiPlayer) {
+                midiPlayer.recordPlayNote(realNote, velocity);
+            }
         }
     }
 
@@ -82,6 +87,9 @@
         if (pressedMap.has(realNote)) {
             pressedMap.delete(realNote);
             socketPlayer.stopNote(realNote, $sustain);
+            if (this !== midiPlayer) {
+                midiPlayer.recordStopNote(realNote);
+            }
         }
     }
 
@@ -118,10 +126,6 @@
     // Recalc when whiteKeys (and thereby the noteRange) changes
     $: recalcWidth(whiteKeys);
 
-    onMount(() => {
-        recalcWidth(whiteKeys);
-    });
-
     function onKeyDown(event: KeyboardEvent) {
         const note = keyBinds[event.code];
         const target = event.target as HTMLElement;
@@ -140,7 +144,7 @@
         }
     }
 
-    // We need to pass the control panel data stuff so that it gets called when that changes
+    // We need to pass the control panel data stuff so that this functioin gets called when that changes
     function showLabel(
         note: string,
         labelType: LabelType,
@@ -158,6 +162,42 @@
                 return noteToKeyBindKey[midiToNote(midi)] ?? "";
         }
     }
+
+    function onMidiEvent(event: WebMidi.MIDIMessageEvent) {
+        const [command, key, velocity] = event.data;
+
+        // These are the midi command ids for playing and stopping a note (uses all 16 midi channels)
+        // See https://computermusicresource.com/MIDI.Commands.html
+        if (command >= 144 && command <= 159) {
+            if (velocity == 0) {
+                stopNote(midiToNote(key));
+            } else {
+                // Play notes with velocity mapped from 1 to 127 -> 0 to 1
+                playNote(midiToNote(key), velocity / 127);
+            }
+        } else if (command >= 128 && command <= 143) {
+            stopNote(midiToNote(key));
+        }
+    }
+
+    function connectMidiDevices(midiAccess: WebMidi.MIDIAccess) {
+        midiAccess.inputs.forEach((input) => {
+            input.onmidimessage = onMidiEvent;
+        });
+    }
+
+    onMount(() => {
+        recalcWidth(whiteKeys);
+
+        navigator.requestMIDIAccess().then((access) => {
+            connectMidiDevices(access);
+
+            // Automatically connect midi devices as they plug in
+            access.onstatechange = () => {
+                connectMidiDevices(access);
+            };
+        });
+    });
 </script>
 
 <svelte:window

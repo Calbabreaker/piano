@@ -22,6 +22,7 @@
     import { SocketPlayer } from "./socket_player";
     import spinner from "./spinner.svg";
     import { snakeToTitleCase } from "./utils";
+    import { onMount } from "svelte";
 
     let roomName = "";
     let instrumentName: InstrumentName = "acoustic_grand_piano";
@@ -32,20 +33,28 @@
 
     // We need to destructure these so that we can use svelte bind syntax ($)
     let { noteRange, sustain, noteShift, octaveShift, volume, labelType } = controlPanelData;
-    let { midiFile, midiIsPlaying, midiCurrentTime, midiSpeed, midiTotalTime } = midiPlayer;
+    let {
+        midiIsPlaying,
+        midiIsRecording,
+        midiCurrentTime,
+        midiSpeed,
+        midiTotalTime,
+        selectedMidiTrack,
+        midiTracks,
+    } = midiPlayer;
     let { connected, connecting, connectError, connectedColorHues } = socketPlayer;
 
     $: instrumentPromise = socketPlayer.changeInstrument(instrumentName);
 
-    function onLoad() {
+    onMount(() => {
         // Gets the ?room=[room_name] from the url and connects to a room
         const urlParams = new URLSearchParams(location.search);
         const urlRoomName = urlParams.get("room");
         if (urlRoomName != null) {
             roomName = urlRoomName;
-            socketPlayer.connect(roomName, instrumentName);
+            socketPlayer.connect(roomName);
         }
-    }
+    });
 
     function sizeSelectChange(select: HTMLSelectElement) {
         const option = select.children[select.selectedIndex] as HTMLOptionElement;
@@ -103,7 +112,7 @@
     }
 </script>
 
-<svelte:window on:keydown={onKeyDown} on:keyup={onKeyUp} on:load={onLoad} />
+<svelte:window on:keydown={onKeyDown} on:keyup={onKeyUp} />
 <div class="control-panel">
     <div class="row">
         <div class="option-list">
@@ -193,26 +202,42 @@
                 <input
                     type="file"
                     accept=".midi,.mid"
-                    on:change={(event) => ($midiFile = event.currentTarget.files?.[0])}
+                    on:change={(event) => midiPlayer.setFile(event.currentTarget.files?.[0])}
                 />
             </div>
 
-            <div style="margin: 0.2rem 0 0.2rem 0">
-                {#if $midiIsPlaying}
-                    <button on:click={() => ($midiIsPlaying = false)}>Pause</button>
+            <div>
+                {#if $midiIsPlaying || $midiIsRecording}
+                    <button on:click={() => midiPlayer.stopAndReseek()}>Stop</button>
                 {:else}
-                    <button on:click={() => ($midiIsPlaying = true)}>Play</button>
+                    <button on:click={() => midiPlayer.startPlaying()}>Play</button>
                 {/if}
                 <button
                     on:click={() => {
                         $midiCurrentTime = 0;
-                        // Need to stop and start again to rebuild the up to index
-                        $midiIsPlaying = false;
-                        setTimeout(() => ($midiIsPlaying = true), 100);
+                        midiPlayer.stop();
+                        midiPlayer.lastStartFunc();
                     }}
                 >
                     Restart
                 </button>
+            </div>
+
+            <div>
+                <button on:click={() => midiPlayer.startRecording()} disabled={$midiIsRecording}>
+                    Record
+                </button>
+                <button on:click={() => midiPlayer.saveFile()}>Save</button>
+
+                {#if $midiTracks.length > 0}
+                    <select bind:value={$selectedMidiTrack}>
+                        {#each $midiTracks as track, i}
+                            <option value={i}>{track.name || `[Track ${i}]`}</option>
+                        {/each}
+                    </select>
+                    <button on:click={() => midiPlayer.addTrack()}>Add Track</button>
+                    <button on:click={() => midiPlayer.deleteTrack()}>Delete Track</button>
+                {/if}
             </div>
 
             <div>
@@ -240,8 +265,8 @@
                     max={$midiTotalTime}
                     step="0.1"
                     bind:value={$midiCurrentTime}
-                    on:mousedown={() => ($midiIsPlaying = false)}
-                    on:mouseup={() => ($midiIsPlaying = true)}
+                    on:mousedown={() => midiPlayer.stop()}
+                    on:mouseup={() => midiPlayer.lastStartFunc()}
                     style="width: 18rem"
                 />
                 {$midiCurrentTime.toFixed(1)}/{$midiTotalTime.toFixed(1)} seconds
@@ -269,7 +294,6 @@
             <!-- Generate the connected square icons -->
             {#each Array.from($connectedColorHues.entries()) as [socketID, colorHue]}
                 <div class="icon" style={`--color-hue: ${colorHue}`} />
-                <!-- Indentify the users color -->
                 {#if socketID === socketPlayer.socket.id}
                     <span style="margin-right: 0.5rem">(you)</span>
                 {/if}
