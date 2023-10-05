@@ -62,7 +62,7 @@
         }
 
         switch (event.code) {
-            case "space":
+            case "Space":
                 $sustain = true;
                 break;
             case "ControlLeft":
