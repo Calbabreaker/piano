@@ -31,17 +31,4 @@
         margin-bottom: 1rem;
         display: flex;
     }
-
-    .error {
-        color: #fe3c3c;
-    }
-
-    .icon {
-        display: inline-block;
-        background-color: hsl(var(--color-hue), 60%, 50%);
-        border: hsl(var(--color-hue), 60%, 40%) solid 2px;
-        width: 1rem;
-        height: 1rem;
-        margin-bottom: -5px;
-    }
 </style>
