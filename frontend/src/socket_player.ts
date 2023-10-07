@@ -46,15 +46,6 @@ export class Client {
             );
         }
     }
-
-    clean() {
-        // Stop all notes to prevent memory leak
-        for (const note of this.audioNodeMap.values()) {
-            note.stop();
-        }
-
-        this.audioNodeMap.clear();
-    }
 }
 
 export class SocketPlayer {
@@ -69,8 +60,8 @@ export class SocketPlayer {
     socket: Socket | null = null;
 
     // Note play functions to be set by the piano (gets called when needs to be played)
-    onPlayNote: (event: IPlayNoteEvent, thread: Client) => void;
-    onStopNote: (event: IStopNoteEvent, thread: Client) => void;
+    onPlayNote: (event: IPlayNoteEvent, client: Client) => void;
+    onStopNote: (event: IStopNoteEvent, client: Client) => void;
 
     // Connects to a server using socketio and sets the listeners
     connect(roomName: string) {
@@ -154,7 +145,7 @@ export class SocketPlayer {
             const colorHues = get(this.connectedColorHues);
             colorHues.delete(socketID);
             this.connectedColorHues.set(colorHues);
-            this.clientMap.get(socketID).clean();
+            this.cleanClient(this.clientMap.get(socketID));
             this.clientMap.delete(socketID);
         });
     }
@@ -199,7 +190,7 @@ export class SocketPlayer {
     // Clean and reset things when disconnecting
     private clean() {
         for (const client of this.clientMap.values()) {
-            client.clean();
+            this.cleanClient(client);
         }
 
         this.socket.removeAllListeners();
@@ -209,5 +200,12 @@ export class SocketPlayer {
         this.clientMap.clear();
         this.localClient.colorHue = "220";
         get(this.connectedColorHues).clear();
+    }
+
+    private cleanClient(client: Client) {
+        // Stop all notes to prevent notes still held after disconnect
+        for (const note of client.audioNodeMap.keys()) {
+            this.onStopNote({ note, sustain: false }, client);
+        }
     }
 }
