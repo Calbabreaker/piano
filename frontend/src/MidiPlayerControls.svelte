@@ -72,7 +72,7 @@
         {/if}
     </div>
 
-    <div>
+    <div style="display: flex;">
         <span>Speed</span>
         <input
             type="range"
@@ -88,9 +88,10 @@
                 }
             }}
         />
-        <input type="number" min="0.01" bind:value={$midiSpeed} />times<br />
+        <input type="number" min="0.01" bind:value={$midiSpeed} />
+        <span>times</span>
     </div>
-    <div>
+    <div style="display: flex;">
         <input
             type="range"
             min="0"
@@ -101,12 +102,16 @@
             on:mouseup={() => midiPlayer.lastStartFunc()}
             style="width: 18rem"
         />
-        {$midiCurrentTime.toFixed(1)}/{$midiTotalTime.toFixed(1)} seconds
+        <span>{$midiCurrentTime.toFixed(1)}/{$midiTotalTime.toFixed(1)} seconds</span>
     </div>
 </div>
 
 <style>
     div > div {
         margin-top: 0.2rem;
+    }
+
+    span {
+        margin-right: 0.3rem;
     }
 </style>

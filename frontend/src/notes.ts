@@ -1,7 +1,7 @@
 export const noteNames = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
 
 // Key binds to notes that make sense on a QWERTY keyboard
-export const keyBinds: { [key: string]: string | undefined } = {
+export const keyBinds: { [key: string]: string } = {
     Backquote: "A#2",
     Tab: "B2",
     KeyQ: "C3",
@@ -51,7 +51,7 @@ export const keyBinds: { [key: string]: string | undefined } = {
 
 // Maps a note to a key bind key to show up on the piano
 // prettier-ignore
-export const noteToKeyBindKey:  {[key: string]: string | undefined } = {
+export const noteToKeyBindKey:  {[key: string]: string } = {
     "A#2": "`",
     "B2": "↹",
     "C3": "Q",
@@ -128,9 +128,10 @@ export interface INote {
     pressedColor: string | null;
 }
 
-export type INoteMap = { [key: string]: INote | undefined };
+// Mapping of a note to some data
+export type INoteMap = { [note: string]: INote };
 
-// Takes in a note range and returns the noteMap (see above) of all the notes and the number of white keys in order to calculate the width of the piano
+// Takes in a note range and returns the generated noteMap (see above) of all the notes and the number of white keys in order to calculate the width of the piano
 export function generateNoteMapFromRange(startNote: string, endNote: string): [INoteMap, number] {
     const endOctave = getOctave(endNote);
     const startOctave = getOctave(startNote);

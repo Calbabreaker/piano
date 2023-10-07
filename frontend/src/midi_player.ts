@@ -15,7 +15,7 @@ export class MidiPlayer {
     midiIsRecording = writable(false);
     selectedMidiTrack = writable(0);
     midiData = new Midi();
-    midiTracks = writable<Track[]>(this.midiData.tracks);
+    midiTracks = writable<Track[]>(this.midiData.tracks); // A seperate svelte store referencing this.midiData.tracks to notify and dynamically update when tracks changes
     midiPlaySolo = writable(false);
 
     // Reference to the startRecording or startPlaying function, whatever was called last
@@ -23,18 +23,20 @@ export class MidiPlayer {
     lastStartFunc = () => {};
 
     private tracksIndexUpTo: number[] = []; // Stores the note index that we are up to when playing for every track
-    private loopIntervalID: number;
+    private loopIntervalID?: number;
     private playingHeldNotes: Note[] = [];
     private recordingHeldNotes = new Map<number, NoteConstructorInterface>();
     private recoringMidiData: Midi | null = null;
     private midiLastStartTime = 0; // The midi time when startPlaying or startRecording was called for seeking back when stopping
 
-    onPlayNote: (note: string, velocity: number) => void;
-    onStopNote: (note: string) => void;
+    // Note play functions to be set by the piano
+    onPlayNote?: (note: string, velocity: number) => void;
+    onStopNote?: (note: string) => void;
 
     constructor() {
         // Update the total time whenver the track information changes
         this.midiTracks.subscribe((tracks) => {
+            console.log(tracks.map((t) => t.instrument.family));
             const totalTime = tracks.length == 0 ? 0 : this.midiData.duration;
             this.midiTotalTime.set(totalTime);
             this.midiCurrentTime.set(Math.min(totalTime, get(this.midiCurrentTime)));
@@ -219,6 +221,7 @@ export class MidiPlayer {
         }, 10);
     }
 
+    // Loop through tracks and plays or stops any notes as needed
     private onPlayUpdate(midiNow: number) {
         // Check and release held notes
         this.playingHeldNotes.forEach((note, i) => {

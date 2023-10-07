@@ -168,8 +168,6 @@
 
     .option-list span {
         width: 7rem;
-        margin-bottom: auto;
-        margin-top: auto;
     }
 
     .option-list {

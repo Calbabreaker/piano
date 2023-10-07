@@ -31,7 +31,7 @@ p {
 }
 
 input {
-    margin-right: 5px;
+    margin-right: 0.4em;
     user-select: none;
 }
 
@@ -47,4 +47,9 @@ input[type="range"] {
 img {
     margin-left: 0.2rem;
     width: 1rem;
+}
+
+span {
+    margin-bottom: auto;
+    margin-top: auto;
 }

@@ -1,5 +1,5 @@
 <script lang="ts">
-    import type { LabelType, ControlsData } from "./ControlsList.svelte";
+    import type { LabelType, PianoControlsData } from "./PianoControlsList.svelte";
     import { MidiPlayer } from "./midi_player";
     import {
         generateNoteMapFromRange,
@@ -9,23 +9,21 @@
         noteToKeyBindKey,
         noteToMidi,
     } from "./notes";
-    import type { INoteMap } from "./notes";
     import type { SocketPlayer } from "./socket_player";
     import { onMount } from "svelte";
 
-    let mouseDown: boolean = false;
-    let whiteKeys: number;
+    let mouseDown = false;
     let pianoContainer: HTMLDivElement;
-
-    // A map mapping a note name to some note state data
-    let noteMap: INoteMap;
 
     // This map allows us to know if the local client is pressing a specific key
     // noteMap is unreliable here because other client (in multiplayer) could be pressing the same keys
     let pressedMap = new Map<string, boolean>();
 
-    export let pianoControlsData: ControlsData;
+    export let pianoControlsData: PianoControlsData;
     let { noteRange, sustain, noteShift, octaveShift, volume, labelType } = pianoControlsData;
+
+    // Remake the noteMap when the noteRange changed
+    $: [noteMap, whiteKeys] = generateNoteMapFromRange($noteRange[0], $noteRange[1]);
 
     // Set play and stop note functions so that the midiPlayer can play notes on this piano
     export let midiPlayer: MidiPlayer;
@@ -54,11 +52,6 @@
             client.stopAudio(note);
         }
     };
-
-    // Remake the noteMap (aka. piano data) when the noteRage changed
-    noteRange.subscribe((range) => {
-        [noteMap, whiteKeys] = generateNoteMapFromRange(range[0], range[1]);
-    });
 
     // Gets the note with the note shift and octave shift applied
     function getShiftedNote(note: string): string {
