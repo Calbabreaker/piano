@@ -150,16 +150,22 @@ export class SocketPlayer {
         });
     }
 
-    // These functions send the note event to the server
-    sendPlayNote(noteEvent: IPlayNoteEvent) {
+    // These functions send the note event to the server as well as calling the inner note play/stop functions with the local thread
+    playNote(note: string, volume: number) {
+        const event: IPlayNoteEvent = { note, volume };
+        this.onPlayNote(event, this.localClient);
+
         if (this.socket) {
-            this.socket.emit("play_note", noteEvent);
+            this.socket.emit("play_note", event);
         }
     }
 
-    sendStopNote(noteEvent: IStopNoteEvent) {
+    stopNote(note: string, sustain: boolean) {
+        const event: IStopNoteEvent = { note, sustain };
+        this.onStopNote(event, this.localClient);
+
         if (this.socket) {
-            this.socket.emit("stop_note", noteEvent);
+            this.socket.emit("stop_note", event);
         }
     }
 

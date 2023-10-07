@@ -68,9 +68,7 @@
         if (!pressedMap.has(realNote)) {
             pressedMap.set(realNote, true);
 
-            const event: IPlayNoteEvent = { note: realNote, volume: $volume * velocity };
-            socketPlayer.sendPlayNote(event);
-            socketPlayer.onPlayNote(event, socketPlayer.localClient);
+            socketPlayer.playNote(realNote, $volume * velocity);
 
             // We check if the callee is not the midiPlayer so that it doesn't record itself playing the note
             if (this !== midiPlayer) {
@@ -84,9 +82,7 @@
         if (pressedMap.has(realNote)) {
             pressedMap.delete(realNote);
 
-            const event: IStopNoteEvent = { note: realNote, sustain: $sustain };
-            socketPlayer.sendStopNote(event);
-            socketPlayer.onStopNote(event, socketPlayer.localClient);
+            socketPlayer.stopNote(realNote, $sustain);
 
             if (this !== midiPlayer) {
                 midiPlayer.recordStopNote(realNote);
@@ -138,7 +134,7 @@
         }
     }
 
-    function onKeyup(event: KeyboardEvent) {
+    function onKeyUp(event: KeyboardEvent) {
         const note = keyBinds[event.code];
         if (note) {
             stopNote(note);
@@ -203,7 +199,7 @@
 
 <svelte:window
     on:resize={() => recalcWidth(whiteKeys)}
-    on:keyup={onKeyup}
+    on:keyup={onKeyUp}
     on:keydown={onKeyDown}
     on:pointerdown={() => (mouseDown = true)}
     on:pointerup={() => (mouseDown = false)}
@@ -226,7 +222,11 @@
                         playNote(note);
                     }
                 }}
-                on:pointerleave={() => stopNote(note)}
+                on:pointerleave={() => {
+                    if (mouseDown) {
+                        stopNote(note);
+                    }
+                }}
                 on:pointerup={() => stopNote(note)}
                 style="--color-hue: {pressedColor}"
             >
