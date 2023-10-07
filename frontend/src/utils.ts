@@ -2,8 +2,11 @@ import * as Soundfont from "soundfont-player";
 import type { InstrumentName } from "../../backend/src/instrument_names";
 
 const AudioContext = window.AudioContext || window.webkitAudioContext;
-if (!AudioContext) alert("Your browser does not seem to support the Web Audio API!");
 const audioContext = new AudioContext();
+if (!AudioContext) {
+    alert("Your browser does not seem to support the Web Audio API!");
+}
+
 const instrumentCache: { [key: string]: Promise<Soundfont.Player> } = {};
 
 // Fetches the instrument from the instrument name while caching it

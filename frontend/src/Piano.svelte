@@ -1,4 +1,5 @@
 <script lang="ts">
+    import type { IPlayNoteEvent, IStopNoteEvent } from "../../backend/src/socket_events";
     import type { LabelType, PianoControlsData } from "./PianoControlsList.svelte";
     import { MidiPlayer } from "./midi_player";
     import {
@@ -33,8 +34,8 @@
     export let socketPlayer: SocketPlayer;
 
     // These set the functions that do the actual playing using the instrument
-    // SocketPlayer needs to handle when to play since it also might need to send the note event to the server
-    // and find out which thread the current user is using to play
+    // SocketPlayer needs a way to notify when a note needs to be played (sent from the server)
+    // It also needs to manage all the clients as well
     socketPlayer.onPlayNote = ({ note, volume }, client) => {
         if (noteMap[note]) {
             noteMap[note].pressedColor = client.colorHue;
@@ -66,7 +67,10 @@
         // Only play if a note isn't already being held
         if (!pressedMap.has(realNote)) {
             pressedMap.set(realNote, true);
-            socketPlayer.playNote(realNote, $volume * velocity);
+
+            const event: IPlayNoteEvent = { note: realNote, volume: $volume * velocity };
+            socketPlayer.sendPlayNote(event);
+            socketPlayer.onPlayNote(event, socketPlayer.localClient);
 
             // We check if the callee is not the midiPlayer so that it doesn't record itself playing the note
             if (this !== midiPlayer) {
@@ -79,7 +83,11 @@
         const realNote = getShiftedNote(note);
         if (pressedMap.has(realNote)) {
             pressedMap.delete(realNote);
-            socketPlayer.stopNote(realNote, $sustain);
+
+            const event: IStopNoteEvent = { note: realNote, sustain: $sustain };
+            socketPlayer.sendStopNote(event);
+            socketPlayer.onStopNote(event, socketPlayer.localClient);
+
             if (this !== midiPlayer) {
                 midiPlayer.recordStopNote(realNote);
             }

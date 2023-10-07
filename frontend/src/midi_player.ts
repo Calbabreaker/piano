@@ -1,4 +1,4 @@
-import { Midi, Track } from "@tonejs/midi";
+import { Midi, type Track } from "@tonejs/midi";
 import type { Note, NoteConstructorInterface } from "@tonejs/midi/dist/Note";
 import { writable, get } from "svelte/store";
 import { noteToMidi } from "./notes";
@@ -29,14 +29,13 @@ export class MidiPlayer {
     private recoringMidiData: Midi | null = null;
     private midiLastStartTime = 0; // The midi time when startPlaying or startRecording was called for seeking back when stopping
 
-    // Note play functions to be set by the piano
+    // Note play functions to be set by the piano (gets called when needs to be played)
     onPlayNote?: (note: string, velocity: number) => void;
     onStopNote?: (note: string) => void;
 
     constructor() {
         // Update the total time whenver the track information changes
         this.midiTracks.subscribe((tracks) => {
-            console.log(tracks.map((t) => t.instrument.family));
             const totalTime = tracks.length == 0 ? 0 : this.midiData.duration;
             this.midiTotalTime.set(totalTime);
             this.midiCurrentTime.set(Math.min(totalTime, get(this.midiCurrentTime)));

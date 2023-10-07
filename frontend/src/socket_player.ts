@@ -68,6 +68,7 @@ export class SocketPlayer {
     localClient = new Client("220");
     socket: Socket | null = null;
 
+    // Note play functions to be set by the piano (gets called when needs to be played)
     onPlayNote: (event: IPlayNoteEvent, thread: Client) => void;
     onStopNote: (event: IStopNoteEvent, thread: Client) => void;
 
@@ -135,17 +136,17 @@ export class SocketPlayer {
         });
 
         this.socket.on("change_instrument", async (event: IInstrumentChangeEvent) => {
-            const thread = this.clientMap.get(event.socketID);
-            thread.setInstrument(event.instrumentName);
+            const client = this.clientMap.get(event.socketID);
+            client.setInstrument(event.instrumentName);
         });
 
         this.socket.on("client_connect", (data: IClientData) => {
-            this.addThread(data);
+            this.addClient(data);
         });
 
         this.socket.on("client_list_recieve", (clientDatas: IClientData[]) => {
             for (let clientData of clientDatas) {
-                this.addThread(clientData);
+                this.addClient(clientData);
             }
         });
 
@@ -158,40 +159,33 @@ export class SocketPlayer {
         });
     }
 
-    // These functions send the note event to the server as well as calling the inner note play/stop functions with the local thread
-    playNote(note: string, volume: number) {
-        const noteEvent: IPlayNoteEvent = { note, volume };
-        this.onPlayNote(noteEvent, this.localClient);
-
+    // These functions send the note event to the server
+    sendPlayNote(noteEvent: IPlayNoteEvent) {
         if (this.socket) {
             this.socket.emit("play_note", noteEvent);
         }
     }
 
-    stopNote(note: string, sustain: boolean) {
-        const noteEvent: IStopNoteEvent = { note, sustain };
-        this.onStopNote(noteEvent, this.localClient);
-
+    sendStopNote(noteEvent: IStopNoteEvent) {
         if (this.socket) {
             this.socket.emit("stop_note", noteEvent);
         }
     }
 
     async changeInstrument(instrumentName: InstrumentName) {
-        const event = { instrumentName } as IInstrumentChangeEvent;
         if (this.socket) {
-            this.socket.emit("change_instrument", event);
+            this.socket.emit("change_instrument", { instrumentName });
         }
 
         await this.localClient.setInstrument(instrumentName);
     }
 
-    private addThread({ socketID, colorHue, instrumentName }: IClientData) {
+    private addClient({ socketID, colorHue, instrumentName }: IClientData) {
         const colorHues = get(this.connectedColorHues);
         colorHues.set(socketID, colorHue);
         this.connectedColorHues.set(colorHues);
 
-        // If we're adding the local client, then just move over the localClientThread
+        // If we're adding the local client, then just move localClient to the clientMap
         if (socketID == this.socket.id) {
             this.localClient.colorHue = colorHue;
             this.clientMap.set(socketID, this.localClient);
