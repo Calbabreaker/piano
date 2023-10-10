@@ -72,7 +72,7 @@
 
             // We check if the callee is not the midiPlayer so that it doesn't record itself playing the note
             if (this !== midiPlayer) {
-                midiPlayer.recordPlayNote(realNote, velocity);
+                midiPlayer.recordPlayNote(note, velocity);
             }
         }
     }
@@ -85,7 +85,7 @@
             socketPlayer.stopNote(realNote, $sustain);
 
             if (this !== midiPlayer) {
-                midiPlayer.recordStopNote(realNote);
+                midiPlayer.recordStopNote(note);
             }
         }
     }
