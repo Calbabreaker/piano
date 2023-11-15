@@ -43,6 +43,7 @@ export class MidiPlayer {
     }
 
     startPlaying() {
+        this.stop();
         this.recalcPlayIndex();
 
         // Create the playing loop
