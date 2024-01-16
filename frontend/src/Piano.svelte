@@ -1,5 +1,4 @@
 <script lang="ts">
-    import type { IPlayNoteEvent, IStopNoteEvent } from "../../backend/src/socket_events";
     import type { LabelType, PianoControlsData } from "./PianoControlsList.svelte";
     import { MidiPlayer } from "./midi_player";
     import {
@@ -111,6 +110,7 @@
     octaveShift.subscribe(unpressHeld);
     noteShift.subscribe(unpressHeld);
 
+    // Caculates an individual key's width while making sure the key won't be over the height of the container
     function recalcWidth(numWhiteKeys: number) {
         if (pianoContainer) {
             // A key's height is 6 times its width so we divide the total area by 6 to get the maximum width for a key
@@ -146,7 +146,7 @@
         note: string,
         labelType: LabelType,
         noteShift: number,
-        octaveShift: number
+        octaveShift: number,
     ): string {
         switch (labelType) {
             case "none":
@@ -201,7 +201,11 @@
     on:resize={() => recalcWidth(whiteKeys)}
     on:keyup={onKeyUp}
     on:keydown={onKeyDown}
-    on:pointerdown={() => (mouseDown = true)}
+    on:pointerdown={(e) => {
+        if (e.button === 0 && e.target?.tagName !== "SELECT") {
+            mouseDown = true;
+        }
+    }}
     on:pointerup={() => (mouseDown = false)}
 />
 <!-- Have a container for the piano in order to get the full width/height of the piano -->
