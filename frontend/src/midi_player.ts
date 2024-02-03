@@ -154,8 +154,6 @@ export class MidiPlayer {
     }
 
     saveFile() {
-        this.stop();
-
         // Creates a url blob of the midi data and downloads the file automatically using a link tag
         const blob = new Blob([this.midiData.toArray()], { type: "application/octet-stream" });
         const url = URL.createObjectURL(blob);
@@ -175,13 +173,12 @@ export class MidiPlayer {
             return;
         }
 
-        this.stop();
-
-        // When the midiFile is changednd read in the new midiFile data
+        // When the midiFile is changed read in the new midiFile data
         const reader = new FileReader();
         reader.onload = () => {
             this.midiData = new Midi(reader.result as ArrayBuffer);
             this.midiTracks.set(this.midiData.tracks);
+            this.selectedMidiTrack.set(0);
         };
         reader.readAsArrayBuffer(file);
     }
@@ -231,30 +228,33 @@ export class MidiPlayer {
             }
         });
 
-        const checkTracks = (track: Track, i: number) => {
-            // Keep going through all notes that are behind the current time and play them to do simultaneous notes
-            // and to catch up with any notes that were behind
-            while (true) {
-                const note = track.notes[this.tracksIndexUpTo[i]];
-                if (!note || midiNow < note.time) {
-                    break;
-                }
-
-                // But don't play them if they're already completely played
-                if (note.time + note.duration > midiNow) {
-                    this.onPlayNote(note.name, note.velocity);
-                    this.playingHeldNotes.push(note);
-                }
-
-                this.tracksIndexUpTo[i]++;
-            }
-        };
-
         if (get(this.midiPlaySolo)) {
             const i = get(this.selectedMidiTrack);
-            checkTracks(this.midiData.tracks[i], i);
+            this.checkTracksPlayNotes(midiNow, i);
         } else {
-            this.midiData.tracks.forEach(checkTracks);
+            for (let i = 0; i < this.midiData.tracks.length; i++) {
+                this.checkTracksPlayNotes(midiNow, i);
+            }
+        }
+    }
+
+    private checkTracksPlayNotes(midiNow: number, trackI: number) {
+        const track = this.midiData.tracks[trackI];
+        // Keep going through all notes that are behind the current time and play them to do simultaneous notes
+        // and to catch up with any notes that were behind
+        while (true) {
+            const note = track.notes[this.tracksIndexUpTo[trackI]];
+            if (!note || midiNow < note.time) {
+                break;
+            }
+
+            // But don't play them if they're already completely past
+            if (note.time + note.duration > midiNow) {
+                this.onPlayNote(note.name, note.velocity);
+                this.playingHeldNotes.push(note);
+            }
+
+            this.tracksIndexUpTo[trackI]++;
         }
     }
 }
