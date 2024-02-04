@@ -69,7 +69,7 @@ export class MidiPlayer {
             this.addTrack();
         }
 
-        // Remove the track the we're currently recording in since we're overwriting it
+        // Reset the track the we're currently recording in since we're overwriting it
         this.midiData.tracks[get(this.selectedMidiTrack)].notes = [];
 
         // We need to clone the midiData since we're also playing the tracks at the same time
@@ -77,15 +77,6 @@ export class MidiPlayer {
         this.recoringMidiData = this.midiData.clone();
 
         this.recalcPlayIndex();
-        this.startLoop((midiNow) => {
-            this.onPlayUpdate(midiNow);
-
-            // Increase total time as the time reaches the end
-            if (midiNow > get(this.midiTotalTime)) {
-                this.midiTotalTime.set(midiNow);
-            }
-        });
-
         this.midiIsRecording.set(true);
         this.lastStartFunc = this.startRecording.bind(this);
         this.midiLastStartTime = get(this.midiCurrentTime);
@@ -94,6 +85,7 @@ export class MidiPlayer {
     // Stop playing or recording and resets
     stop() {
         clearInterval(this.loopIntervalID);
+        this.loopIntervalID = undefined;
         this.playingHeldNotes.forEach((note) => this.onStopNote(note.name));
         this.playingHeldNotes = [];
         this.midiIsPlaying.set(false);
@@ -111,27 +103,43 @@ export class MidiPlayer {
     }
 
     recordPlayNote(note: string, velocity: number) {
-        if (get(this.midiIsRecording)) {
-            const midi = noteToMidi(note);
-            // Store the note and then later add it into the midi track when the note is release
-            this.recordingHeldNotes.set(midi, {
-                midi,
-                velocity,
-                time: get(this.midiCurrentTime),
+        if (!get(this.midiIsRecording)) {
+            return;
+        }
+
+        // Only start the loop once the first note has been played
+        if (this.loopIntervalID === undefined) {
+            this.startLoop((midiNow) => {
+                this.onPlayUpdate(midiNow);
+
+                // Increase total time as the time reaches the end
+                if (midiNow > get(this.midiTotalTime)) {
+                    this.midiTotalTime.set(midiNow);
+                }
             });
         }
+
+        const midi = noteToMidi(note);
+        // Store the note and then later add it into the midi track when the note is released
+        this.recordingHeldNotes.set(midi, {
+            midi,
+            velocity,
+            time: get(this.midiCurrentTime),
+        });
     }
 
     recordStopNote(note: string) {
-        if (get(this.midiIsRecording)) {
-            const midi = noteToMidi(note);
-            const noteObject = this.recordingHeldNotes.get(midi);
+        if (!get(this.midiIsRecording)) {
+            return;
+        }
 
-            if (noteObject) {
-                noteObject.duration = get(this.midiCurrentTime) - noteObject.time;
-                this.recoringMidiData.tracks[get(this.selectedMidiTrack)].addNote(noteObject);
-                this.recordingHeldNotes.delete(midi);
-            }
+        const midi = noteToMidi(note);
+        const noteObject = this.recordingHeldNotes.get(midi);
+
+        if (noteObject) {
+            noteObject.duration = get(this.midiCurrentTime) - noteObject.time;
+            this.recoringMidiData.tracks[get(this.selectedMidiTrack)].addNote(noteObject);
+            this.recordingHeldNotes.delete(midi);
         }
     }
 
@@ -208,7 +216,7 @@ export class MidiPlayer {
             const now = performance.now();
             const delta = now - lastLoopTime;
 
-            // Caclute the midi current time (in seconds) scaled with the speed
+            // Calculate the midi current time (in seconds) scaled with the speed
             const deltaSecs = (delta / 1000) * get(this.midiSpeed);
             const midiNow = get(this.midiCurrentTime) + deltaSecs;
             loopFunc(midiNow);

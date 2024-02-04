@@ -16,6 +16,15 @@
     } = midiPlayer;
 
     $: midiInUse = $midiIsPlaying || $midiIsRecording;
+
+    function startRecording() {
+        if (!Boolean(localStorage.getItem("hasRecordedBefore"))) {
+            alert("Play any key to start recording. Recording WILL override the selected track.");
+            localStorage.setItem("hasRecordedBefore", "true");
+        }
+
+        midiPlayer.startRecording();
+    }
 </script>
 
 <div>
@@ -57,9 +66,7 @@
     </div>
 
     <div>
-        <button on:click={() => midiPlayer.startRecording()} disabled={$midiIsRecording}>
-            Record
-        </button>
+        <button on:click={() => startRecording()} disabled={$midiIsRecording}> Record </button>
         <button
             on:click={() => midiPlayer.saveFile()}
             disabled={$midiTracks.length == 0 || midiInUse}

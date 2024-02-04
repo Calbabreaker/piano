@@ -30,7 +30,7 @@ export function binarySearch<T>(array: T[], compareFunc: (elm: T) => number): nu
     while (left != right) {
         const middle = Math.ceil((left + right) / 2);
         let result = compareFunc(array[middle]);
-        if (result > 0) {
+        if (result >= 0) {
             right = middle - 1;
         } else {
             left = middle;
