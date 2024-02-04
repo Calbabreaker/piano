@@ -66,7 +66,7 @@
     </div>
 
     <div>
-        <button on:click={() => startRecording()} disabled={$midiIsRecording}> Record </button>
+        <button on:click={() => startRecording()} disabled={midiInUse}>Record</button>
         <button
             on:click={() => midiPlayer.saveFile()}
             disabled={$midiTracks.length == 0 || midiInUse}

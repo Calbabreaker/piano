@@ -43,7 +43,6 @@ export class MidiPlayer {
     }
 
     startPlaying() {
-        this.stop();
         this.recalcPlayIndex();
 
         // Create the playing loop
@@ -54,6 +53,7 @@ export class MidiPlayer {
             if (midiNow > get(this.midiTotalTime)) {
                 this.stop();
                 this.lastStartFunc = () => {};
+                this.midiCurrentTime.set(0);
             }
         });
 
@@ -63,8 +63,6 @@ export class MidiPlayer {
     }
 
     startRecording() {
-        this.stop();
-
         if (this.midiData.tracks.length == 0) {
             this.addTrack();
         }
@@ -219,9 +217,10 @@ export class MidiPlayer {
             // Calculate the midi current time (in seconds) scaled with the speed
             const deltaSecs = (delta / 1000) * get(this.midiSpeed);
             const midiNow = get(this.midiCurrentTime) + deltaSecs;
+            this.midiCurrentTime.set(midiNow);
+
             loopFunc(midiNow);
 
-            this.midiCurrentTime.set(midiNow);
             lastLoopTime = now;
         }, 10);
     }
