@@ -132,7 +132,8 @@ export interface INote {
 export type INoteMap = { [note: string]: INote };
 
 // Takes in a note range and returns the generated noteMap (see above) of all the notes and the number of white keys in order to calculate the width of the piano
-export function generateNoteMapFromRange(startNote: string, endNote: string): [INoteMap, number] {
+export function generateNoteMapFromRange(noteRange: string): [INoteMap, number] {
+    const [startNote, endNote] = noteRange.split(",");
     const endOctave = getOctave(endNote);
     const startOctave = getOctave(startNote);
     const startNoteNameIndex = noteNames.indexOf(getNoteName(startNote));

@@ -23,7 +23,7 @@
     let { noteRange, sustain, noteShift, octaveShift, volume, labelType } = pianoControlsData;
 
     // Remake the noteMap when the noteRange changed
-    $: [noteMap, whiteKeys] = generateNoteMapFromRange($noteRange[0], $noteRange[1]);
+    $: [noteMap, whiteKeys] = generateNoteMapFromRange($noteRange);
 
     // Set play and stop note functions so that the midiPlayer can play notes on this piano
     export let midiPlayer: MidiPlayer;

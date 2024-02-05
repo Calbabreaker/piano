@@ -29,8 +29,9 @@ export class Client {
     }
 
     stopAudio(note: string) {
-        if (this.audioNodeMap.get(note)) {
-            this.audioNodeMap.get(note).stop();
+        const node = this.audioNodeMap.get(note);
+        if (node) {
+            node.stop();
             this.audioNodeMap.delete(note);
         }
     }
@@ -60,8 +61,8 @@ export class SocketPlayer {
     socket: Socket | null = null;
 
     // Note play functions to be set by the piano (gets called when needs to be played)
-    onPlayNote: (event: IPlayNoteEvent, client: Client) => void;
-    onStopNote: (event: IStopNoteEvent, client: Client) => void;
+    onPlayNote?: (event: IPlayNoteEvent, client: Client) => void;
+    onStopNote?: (event: IStopNoteEvent, client: Client) => void;
 
     // Connects to a server using socketio and sets the listeners
     connect(roomName: string) {
@@ -108,13 +109,13 @@ export class SocketPlayer {
             this.connected.set(true);
 
             // Set the url to end in /?room=[name] also change the title
-            history.replaceState({}, undefined, `?room=${roomName}`);
+            history.replaceState({}, "", `?room=${roomName}`);
             document.title = `Room ${roomName} - Play Piano!`;
         });
 
         this.socket.on("disconnect", () => {
             this.clean();
-            history.replaceState({}, undefined, location.pathname);
+            history.replaceState({}, "", location.pathname);
             document.title = "Play Piano!";
         });
 
@@ -183,7 +184,7 @@ export class SocketPlayer {
         this.connectedColorHues.set(colorHues);
 
         // If we're adding the local client, then just move localClient to the clientMap
-        if (socketID == this.socket.id) {
+        if (socketID == this.socket?.id) {
             this.localClient.colorHue = colorHue;
             this.clientMap.set(socketID, this.localClient);
         } else {

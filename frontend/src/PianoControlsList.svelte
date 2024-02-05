@@ -11,7 +11,7 @@
         noteShift = writable(0);
         sustain = writable(false);
         volume = writable(5);
-        noteRange = writable<[string, string]>(["C2", "C7"]);
+        noteRange = writable<string>("C2,C7");
         labelType = writable<LabelType>("keybinds");
     }
 </script>
@@ -31,11 +31,6 @@
     let { noteRange, sustain, noteShift, octaveShift, volume, labelType } = pianoControlsData;
 
     $: instrumentPromise = socketPlayer.changeInstrument(instrumentName);
-
-    function sizeSelectChange(select: HTMLSelectElement) {
-        const option = select.children[select.selectedIndex] as HTMLOptionElement;
-        $noteRange = option.dataset["range"].split(",") as [string, string];
-    }
 
     function onKeyDown(event: KeyboardEvent) {
         if ((event.target as HTMLElement).tagName === "INPUT") {
@@ -141,12 +136,12 @@
 
     <div>
         <span>Size</span>
-        <select on:change={(event) => sizeSelectChange(event.currentTarget)} use:sizeSelectChange>
-            <option data-range="A0,C8">Full size (88 keys)</option>
-            <option data-range="C2,C7" selected={true}>Half size (61 keys)</option>
-            <option data-range="C3,C6">Quater Size (37 keys)</option>
-            <option data-range="C4,B5">2 Octaves (24 keys)</option>
-            <option data-range="C4,B4">1 Octave (12 keys)</option>
+        <select bind:value={$noteRange}>
+            <option value="A0,C8">Full size (88 keys)</option>
+            <option value="C2,C7">Half size (61 keys)</option>
+            <option value="C3,C6">Quater Size (37 keys)</option>
+            <option value="C4,B5">2 Octaves (24 keys)</option>
+            <option value="C4,B4">1 Octave (12 keys)</option>
         </select>
     </div>
 
