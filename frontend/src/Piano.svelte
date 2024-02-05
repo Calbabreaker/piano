@@ -63,16 +63,17 @@
     function playNote(note: string, velocity = 0.5) {
         const realNote = getShiftedNote(note);
 
-        // Only play if a note isn't already being held
-        if (!pressedMap.has(realNote)) {
-            pressedMap.set(realNote, true);
+        // Stop note if note is being held
+        if (pressedMap.has(realNote)) {
+            stopNote(note);
+        }
 
-            socketPlayer.playNote(realNote, $volume * velocity);
+        pressedMap.set(realNote, true);
+        socketPlayer.playNote(realNote, $volume * velocity);
 
-            // We check if the callee is not the midiPlayer so that it doesn't record itself playing the note
-            if (this !== midiPlayer) {
-                midiPlayer.recordPlayNote(note, velocity);
-            }
+        // We check if the callee is not the midiPlayer so that it doesn't record itself playing the note
+        if (this !== midiPlayer) {
+            midiPlayer.recordPlayNote(note, velocity);
         }
     }
 
@@ -146,7 +147,7 @@
         note: string,
         labelType: LabelType,
         noteShift: number,
-        octaveShift: number,
+        octaveShift: number
     ): string {
         switch (labelType) {
             case "none":
