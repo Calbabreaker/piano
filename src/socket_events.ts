@@ -3,7 +3,7 @@ import { InstrumentName } from "./instrument_names";
 export interface IClientData {
     colorHue: string;
     socketID: string;
-    instrumentName?: InstrumentName;
+    instrumentName: InstrumentName;
 }
 
 export interface IPlayNoteEvent {
