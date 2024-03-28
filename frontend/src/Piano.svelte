@@ -60,12 +60,17 @@
     }
 
     // These functions relay the playing to the socket player
-    function playNote(note: string, velocity = 0.5) {
+    function playNote(note: string, velocity = 0.5, allowPressed = true) {
         const realNote = getShiftedNote(note);
 
         // Stop note if note is being held
         if (pressedMap.has(realNote)) {
-            stopNote(note);
+            if (allowPressed) {
+                stopNote(note);
+            } else {
+                // Or exit function if not allowed
+                return;
+            }
         }
 
         pressedMap.set(realNote, true);
@@ -131,7 +136,7 @@
         // If the keyBind exists and the user is not selected in a text box or something then play the note
         if (note && target.tagName !== "INPUT") {
             event.preventDefault();
-            playNote(note);
+            playNote(note, undefined, false);
         }
     }
 
@@ -201,7 +206,7 @@
 <svelte:window
     on:resize={() => recalcWidth(whiteKeys)}
     on:keyup={onKeyUp}
-    on:keydown={onKeyDown}
+    on:keypress={onKeyDown}
     on:pointerdown={(e) => {
         if (e.button === 0 && e.target?.tagName !== "SELECT") {
             mouseDown = true;
