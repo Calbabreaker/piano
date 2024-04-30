@@ -16,7 +16,7 @@
     let pianoContainer: HTMLDivElement;
 
     // This map allows us to know if the local client is pressing a specific key
-    // noteMap is unreliable here because other client (in multiplayer) could be pressing the same keys
+    // noteMap is unreliable here because other clients (while connected to a room) could be pressing the same keys
     let pressedMap = new Map<string, boolean>();
 
     export let pianoControlsData: PianoControlsData;
@@ -60,12 +60,12 @@
     }
 
     // These functions relay the playing to the socket player
-    function playNote(note: string, velocity = 0.5, allowPressed = true) {
+    function playNote(note: string, velocity = 0.5, allowAlreadyPressed = true) {
         const realNote = getShiftedNote(note);
 
         // Stop note if note is being held
         if (pressedMap.has(realNote)) {
-            if (allowPressed) {
+            if (allowAlreadyPressed) {
                 stopNote(note);
             } else {
                 // Or exit function if not allowed
@@ -130,6 +130,7 @@
     $: recalcWidth(whiteKeys);
 
     function onKeyDown(event: KeyboardEvent) {
+        console.log(event.code);
         const note = keyBinds[event.code];
         const target = event.target as HTMLElement;
 
@@ -152,17 +153,16 @@
         note: string,
         labelType: LabelType,
         noteShift: number,
-        octaveShift: number
+        octaveShift: number,
     ): string {
-        switch (labelType) {
-            case "none":
-                return "";
-            case "notes":
-                return getNoteName(note);
-            case "keybinds":
-                // 'Unshifts' the note and gets the keybind from the dictionary
-                const midi = noteToMidi(note) - noteShift - octaveShift * 12;
-                return noteToKeyBindKey[midiToNote(midi)] ?? "";
+        if (labelType == "notes") {
+            return getNoteName(note);
+        } else if (labelType == "keybinds") {
+            // 'Unshifts' the note and gets the keybind from the dictionary
+            const midi = noteToMidi(note) - noteShift - octaveShift * 12;
+            return noteToKeyBindKey[midiToNote(midi)] ?? "";
+        } else {
+            return "";
         }
     }
 
@@ -206,7 +206,7 @@
 <svelte:window
     on:resize={() => recalcWidth(whiteKeys)}
     on:keyup={onKeyUp}
-    on:keypress={onKeyDown}
+    on:keydown={onKeyDown}
     on:pointerdown={(e) => {
         if (e.button === 0 && e.target?.tagName !== "SELECT") {
             mouseDown = true;
