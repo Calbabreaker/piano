@@ -130,7 +130,6 @@
     $: recalcWidth(whiteKeys);
 
     function onKeyDown(event: KeyboardEvent) {
-        console.log(event.code);
         const note = keyBinds[event.code];
         const target = event.target as HTMLElement;
 
