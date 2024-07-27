@@ -18,7 +18,7 @@
 
 <script lang="ts">
     import { snakeToTitleCase } from "./utils";
-    import { type InstrumentName, instrumentNames } from "../../backend/src/instrument_names";
+    import { type InstrumentName, instrumentNames } from "./instrument_names";
     import spinner from "./spinner.svg";
     import type { SocketPlayer } from "./socket_player";
 

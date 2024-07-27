@@ -34,13 +34,13 @@
     />
 
     {#if $connected}
-        <button on:click={() => socketPlayer.socket.disconnect()}>Leave</button>
+        <button on:click={() => socketPlayer.socket.close()}>Leave</button>
         <span>Connected!</span><br />
         <span>People: </span>
         <!-- Generate the connected square icons -->
         {#each Array.from($connectedColorHues.entries()) as [socketID, colorHue]}
             <div class="icon" style={`--color-hue: ${colorHue}`} />
-            {#if socketID === socketPlayer.socket.id}
+            {#if socketID === socketPlayer.localClient.socketID}
                 <span style="margin-right: 0.5rem">(you)</span>
             {/if}
         {/each}

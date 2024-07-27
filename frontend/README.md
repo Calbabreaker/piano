@@ -18,6 +18,6 @@ VITE_BACKEND_HOST=
 VITE_BACKEND_PATH=
 ```
 
-Put the server domain/ip after `VITE_BACKEND_HOST=`. If the server running
+Put the server domain/ip and port after `VITE_BACKEND_HOST=`. If the server running
 on a path set `VITE_BACKEND_PATH` as well. For example to run use the server running on
-localhost, do: `VITE_BACKEND_HOST=http://localhost:5000`
+localhost, do: `VITE_BACKEND_HOST=localhost:5000`

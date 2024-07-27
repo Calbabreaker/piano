@@ -21,7 +21,6 @@
     },
     "dependencies": {
         "@tonejs/midi": "^2.0.28",
-        "socket.io-client": "^4.7.5",
         "soundfont-player": "^0.12.0"
     }
 }
