@@ -100,7 +100,7 @@ export class SocketPlayer {
         if (!backendHost) {
             return this.connectError.set("No backend server was specified in build!");
         }
-        const protocol = location.protocol === "https" ? "wss" : "ws";
+        const protocol = location.protocol === "https:" ? "wss" : "ws";
         const backendPath = import.meta.env.VITE_BACKEND_PATH ?? "";
         const query = `room_name=${roomName}&instrument_name=${this.localClient.instrumentName}`;
         this.socket = new WebSocket(`${protocol}://${backendHost}/${backendPath}?${query}`);
