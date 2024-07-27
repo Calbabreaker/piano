@@ -16,7 +16,7 @@ use warp::{filters::ws::WebSocket, Filter};
 // Unique ID counter
 static NEXT_USER_ID: AtomicU64 = AtomicU64::new(1);
 
-#[derive(Clone, serde::Serialize)]
+#[derive(Clone, serde::Serialize, Debug)]
 struct ClientData {
     color_hue: u16,
     socket_id: u64,
@@ -25,7 +25,7 @@ struct ClientData {
     channel: tokio::sync::mpsc::UnboundedSender<String>,
 }
 
-#[derive(Default, Clone)]
+#[derive(Default, Clone, Debug)]
 struct ClientList(Arc<RwLock<Vec<ClientData>>>);
 
 impl ClientList {
@@ -94,7 +94,7 @@ async fn main() {
     env_logger::builder()
         .format_timestamp(None)
         .filter_level(log::LevelFilter::Warn)
-        .filter_module("backend", log::LevelFilter::Trace)
+        .filter_module("piano_backend", log::LevelFilter::Trace)
         .parse_env("RUST_LOG")
         .init();
 
@@ -120,9 +120,9 @@ async fn main() {
                 ws.on_upgrade(|ws| async move {
                     let socket_id = NEXT_USER_ID.fetch_add(1, Ordering::Relaxed);
                     if let Err(err) = on_connect(ws, &params, &state, socket_id).await {
-                        log::error!("Websocket error (disconnected): {err:?}")
+                        log::error!("Websocket error disconnected: {err:?}")
                     } else {
-                        log::info!("Websocket client disconnected");
+                        log::info!("Websocket client disconnected(id={socket_id})");
                     }
 
                     on_disconnect(&state, socket_id, &params).await;
@@ -148,11 +148,7 @@ async fn on_connect(
 ) -> anyhow::Result<()> {
     let (mut ws_tx, mut ws_rx) = ws.split();
 
-    log::info!("Websocket client connected");
-
-    if params.room_name.len() > 100 {
-        anyhow::bail!("Room name to long!");
-    }
+    log::info!("Websocket client connected(id={socket_id})");
 
     let clients = match check_params(params, state).await {
         Ok(clients) => clients,
@@ -204,7 +200,6 @@ async fn on_connect(
 
     while let Some(ws_result) = ws_rx.next().await {
         if let Ok(string) = ws_result?.to_str() {
-            log::info!("Got from websocket: {string}");
             if let Err(error) = handle_websocket_message(string, &clients, socket_id).await {
                 log::error!("{error}");
             }
@@ -216,7 +211,8 @@ async fn on_connect(
 
 async fn on_disconnect(state: &Arc<RwLock<State>>, socket_id: u64, params: &QueryParams) {
     // Find the client and remove it when disconnect
-    if let Some(clients) = state.read().await.rooms.get(&params.room_name) {
+    let mut state_locked = state.write().await;
+    if let Some(clients) = state_locked.rooms.get(&params.room_name).cloned() {
         let mut clients_locked = clients.0.write().await;
         let index = clients_locked.iter().position(|client| {
             //
@@ -228,7 +224,7 @@ async fn on_disconnect(state: &Arc<RwLock<State>>, socket_id: u64, params: &Quer
 
             // If there are no clients left delete the room
             if clients_locked.len() == 0 {
-                state.write().await.rooms.remove(&params.room_name);
+                state_locked.rooms.remove(&params.room_name);
             } else {
                 drop(clients_locked);
                 let message = WebsocketMessage::ClientDisconnect { socket_id };
