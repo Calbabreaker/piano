@@ -117,7 +117,7 @@
             style="width: 18rem"
             disabled={$isRecording}
         />
-        <span>{$currentTime.toFixed(1)}/{$currentTime.toFixed(1)} seconds</span>
+        <span>{$currentTime.toFixed(1)}/{$totalTime.toFixed(1)} seconds</span>
     </div>
 </div>
 

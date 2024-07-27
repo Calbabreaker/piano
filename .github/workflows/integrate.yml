@@ -21,7 +21,7 @@ jobs:
               run: npm install -g pnpm
             - name: Build frontend
               working-directory: ./frontend
-              run: pnpm install && echo "VITE_BACKEND_HOST=http://localhost:3000" > ./.env && pnpm build
+              run: pnpm install && echo "VITE_BACKEND_HOST=localhost:3000" > ./.env && pnpm build
             - name: Build backend
               working-directory: ./backend
               run: cargo build -r
@@ -46,7 +46,7 @@ jobs:
               run: npm install -g pnpm
             - name: Build frontend with actual server env
               working-directory: ./frontend
-              run: pnpm install && echo "VITE_BACKEND_HOST=https://piano-backend.onrender.com" > ./.env && pnpm build
+              run: pnpm install && echo "VITE_BACKEND_HOST=piano-backend.onrender.com" > ./.env && pnpm build
             - name: Push deploy-frontend
               uses: s0/git-publish-subdir-action@develop
               env:
