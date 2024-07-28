@@ -27,14 +27,14 @@
         placeholder="Room name"
         bind:value={roomName}
         on:keydown={(event) => {
-            if (event.code === "Enter") {
+            if (event.code === "Enter" && !$connected && !$connecting) {
                 socketPlayer.connect(roomName);
             }
         }}
     />
 
     {#if $connected}
-        <button on:click={() => socketPlayer.socket.close()}>Leave</button>
+        <button on:click={() => socketPlayer.disconnect()}>Leave</button>
         <span>Connected!</span><br />
         <span>People: </span>
         <!-- Generate the connected square icons -->

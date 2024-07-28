@@ -87,11 +87,7 @@ export class SocketPlayer {
     onStopNote?: (event: StopNoteMessage, client: Client) => void;
 
     // Connects to a server using socketio and sets the listeners
-    connect(roomName: string) {
-        if (get(this.connecting) || get(this.connected)) {
-            return;
-        }
-
+    connect(roomName: string, maxRetries = 6) {
         if (roomName.length > 100) {
             return this.connectError.set("Room name to long!");
         }
@@ -116,17 +112,28 @@ export class SocketPlayer {
         };
 
         this.socket.onclose = () => {
-            console.log("websocket connection closed");
-            this.clean();
             history.replaceState({}, "", location.pathname);
             document.title = "Play Piano!";
+            this.clean();
+
+            // Try reconnect if unexpectedly disconnected
+            if (get(this.connected)) {
+                console.log("Trying to reconnect");
+                this.connect(roomName);
+                this.connected.set(false);
+            }
         };
 
         this.socket.onerror = () => {
-            this.connectError.set("Failed to connect to websocket server");
-            if (this.socket) {
-                this.socket.close();
-            }
+            console.log(`Failed to connect, reconnecting ${maxRetries} attempts left`);
+            setTimeout(() => {
+                if (maxRetries == 0) {
+                    this.connectError.set("Failed to connect to websocket server");
+                    this.disconnect();
+                } else {
+                    this.connect(roomName, maxRetries - 1);
+                }
+            }, 1000);
         };
 
         this.socket.onmessage = (event) => {
@@ -140,19 +147,26 @@ export class SocketPlayer {
         this.connecting.set(true);
     }
 
+    // Purposefully disconnect
+    disconnect() {
+        this.connected.set(false);
+        this.connecting.set(false);
+        if (this.socket) {
+            this.socket.close();
+        }
+    }
+
     handleMessage(message: any) {
         switch (message.type) {
             case "Error":
                 this.connectError.set(message.error);
                 break;
-            case "PlayNote": {
+            case "PlayNote":
                 this.onPlayNote!(message, this.getClient(message.socket_id)!);
                 break;
-            }
-            case "StopNote": {
+            case "StopNote":
                 this.onStopNote!(message, this.getClient(message.socket_id)!);
                 break;
-            }
             case "InstrumentChange":
                 this.getClient(message.socket_id)!.setInstrument(message.instrument_name);
                 break;
@@ -202,7 +216,7 @@ export class SocketPlayer {
     }
 
     sendMessage(type: string, message: Record<string, any>) {
-        if (this.socket) {
+        if (this.socket && get(this.connected)) {
             this.socket.send(JSON.stringify({ type, ...message }));
         }
     }
@@ -229,12 +243,13 @@ export class SocketPlayer {
         }
 
         this.socket = null;
-        this.connecting.set(false);
-        this.connected.set(false);
         this.clientMap.clear();
         this.localClient.colorHue = 220;
         this.localClient.socketID = 0;
-        get(this.connectedColorHues).clear();
+        this.connectedColorHues.update((colorHues) => {
+            colorHues.clear();
+            return colorHues;
+        });
     }
 
     private cleanClient(client: Client) {
