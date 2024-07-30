@@ -1,6 +1,12 @@
 # Piano Backend
 
-This folder contains the code for the backend socket.io server.
+This folder contains the code for the backend Rust websocket server (uses warp tokio).
+
+Add a .env file with these contents to set the cors allow origin (default any origin):
+
+```
+CORS_ORIGIN=https://example.com
+```
 
 ## Developing
 
