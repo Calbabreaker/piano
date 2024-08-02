@@ -27,6 +27,7 @@ export const keyBinds: { [key: string]: string } = {
     Backspace: "G#4",
     Backslash: "A4",
     CapsLock: "A#4",
+    Escape: "A#4", // CapsLock would sometimes be bound to escape
     ShiftLeft: "B4",
     KeyZ: "C5",
     KeyS: "C#5",

@@ -44,6 +44,13 @@ impl ClientList {
 
         Ok(())
     }
+
+    async fn get_index(&self, socket_id: u64) -> Option<usize> {
+        self.0.read().await.iter().position(|client| {
+            client.socket_id == socket_id
+            //
+        })
+    }
 }
 
 #[derive(Default)]
@@ -213,13 +220,8 @@ async fn on_disconnect(state: &Arc<RwLock<State>>, socket_id: u64, params: &Quer
     // Find the client and remove it when disconnect
     let mut state_locked = state.write().await;
     if let Some(clients) = state_locked.rooms.get(&params.room_name).cloned() {
-        let mut clients_locked = clients.0.write().await;
-        let index = clients_locked.iter().position(|client| {
-            //
-            client.socket_id == socket_id
-        });
-
-        if let Some(index) = index {
+        if let Some(index) = clients.get_index(socket_id).await {
+            let mut clients_locked = clients.0.write().await;
             clients_locked.swap_remove(index);
 
             // If there are no clients left delete the room
@@ -249,8 +251,8 @@ async fn check_params(
         .entry(params.room_name.clone())
         .or_insert_with(ClientList::default)
         .clone();
-    if clients.0.read().await.len() > 50 {
-        anyhow::bail!("Room already has over 50 people");
+    if clients.0.read().await.len() > 25 {
+        anyhow::bail!("Room already has over 25 people");
     }
 
     Ok(clients)
