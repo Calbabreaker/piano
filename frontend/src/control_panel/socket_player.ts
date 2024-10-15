@@ -194,6 +194,11 @@ export class SocketPlayer {
     }
 
     sendMessage(type: string, message: Record<string, any>) {
+        // Only send when other people have connected
+        if (this.clientMap.size == 1) {
+            return;
+        }
+
         if (this.socket && get(this.connected)) {
             this.socket.send(JSON.stringify({ type, ...message }));
         }
