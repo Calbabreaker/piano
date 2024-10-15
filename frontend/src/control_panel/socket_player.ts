@@ -9,7 +9,7 @@ import type { ClientData, WebsocketMessage } from "src/server_bindings";
 export class Client {
     audioNodeMap = new Map<string, Player>();
     instrument?: Player;
-    instrumentName?: InstrumentName;
+    instrumentName!: InstrumentName;
     colorHue: number;
     socketID: number;
 

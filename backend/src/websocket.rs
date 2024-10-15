@@ -162,36 +162,45 @@ impl WebsocketConnection {
     }
 
     async fn on_disconnect(&mut self) -> anyhow::Result<()> {
-        if let Some(client_list) = self.client_list.as_ref() {
-            // Find the client and remove it when disconnect
-            client_list.remove(self.id).await?;
+        let client_list = self.client_list.as_ref().unwrap();
+        // Find the client and remove it when disconnect
+        client_list.remove(self.id).await?;
 
-            // If there are no clients left delete the room
-            if client_list.get().await.len() == 0 {
-                let mut state = self.state.write().await;
-                state.rooms.remove(&self.params.room_name);
-            } else {
-                let message = WebsocketMessage::ClientDisconnect { id: self.id };
-                client_list.send_to_all(&message, self.id).await.ok();
-            }
+        // If there are no clients left delete the room
+        if client_list.get().await.len() == 0 {
+            let mut state = self.state.write().await;
+            state.rooms.remove(&self.params.room_name);
+        } else {
+            let message = WebsocketMessage::ClientDisconnect { id: self.id };
+            client_list.send_to_all(&message, self.id).await.ok();
         }
 
         Ok(())
     }
 
     async fn handle_websocket_message(&mut self, text: &str) -> anyhow::Result<()> {
+        let client_list = self.client_list.as_ref().unwrap();
+
         let mut message = serde_json::from_str(text)?;
         match message {
-            #[rustfmt::skip]
-        WebsocketMessage::PlayNote { ref mut id, .. }
-        | WebsocketMessage::StopNote { ref mut id, .. }
-        | WebsocketMessage::InstrumentChange { ref mut id, .. } => {
-            // Send the event to all the clients but with the id set by us
-            *id = Some(self.id);
-            self.client_list.as_ref().unwrap().send_to_all(&message, self.id).await?;
-        }
+            WebsocketMessage::PlayNote { ref mut id, .. }
+            | WebsocketMessage::StopNote { ref mut id, .. }
+            | WebsocketMessage::InstrumentChange { ref mut id, .. } => {
+                // Send the event to all the clients but with the id set by us
+                *id = Some(self.id);
+                client_list.send_to_all(&message, self.id).await?;
+            }
             _ => (),
         };
+
+        if let WebsocketMessage::InstrumentChange {
+            instrument_name, ..
+        } = message
+        {
+            let mut client_list = client_list.get_mut().await;
+            let client = client_list.iter_mut().find(|client| client.id == self.id);
+            client.unwrap().instrument_name = instrument_name;
+        }
 
         Ok(())
     }
