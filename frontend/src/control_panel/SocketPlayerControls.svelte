@@ -1,5 +1,5 @@
 <script lang="ts">
-    import spinner from "./spinner.svg";
+    import spinner from "../spinner.svg";
     import { SocketPlayer } from "./socket_player";
     import { onMount } from "svelte";
 

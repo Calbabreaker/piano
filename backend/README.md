@@ -11,3 +11,5 @@ CORS_ORIGIN=https://example.com
 ## Developing
 
 Run `cargo run -r` to build and run.
+
+Run `cargo test` to generate typescript types.

@@ -1,6 +1,6 @@
 <script lang="ts">
-    import type { LabelType, PianoControlsData } from "./PianoControlsList.svelte";
-    import { MidiPlayer } from "./midi_player";
+    import type { LabelType, PianoControlsData } from "./control_panel/PianoControlsList.svelte";
+    import { MidiPlayer } from "./control_panel/midi_player";
     import {
         generateNoteMapFromRange,
         getNoteName,
@@ -9,7 +9,7 @@
         noteToKeyBindKey,
         noteToMidi,
     } from "./notes";
-    import type { SocketPlayer } from "./socket_player";
+    import type { SocketPlayer } from "./control_panel/socket_player";
     import { onMount } from "svelte";
 
     let mouseDown = false;
@@ -35,15 +35,15 @@
     // These set the functions that do the actual playing using the instrument
     // SocketPlayer needs a way to notify when a note needs to be played (sent from the server)
     // It also needs to manage all the clients as well
-    socketPlayer.onPlayNote = ({ note, volume }, client) => {
+    socketPlayer.onPlayNote = (note, volume, client) => {
         if (noteMap[note]) {
-            noteMap[note].pressedColor = client.colorHue;
+            noteMap[note].pressedColor = String(client.colorHue);
         }
 
         client.playAudio(note, volume);
     };
 
-    socketPlayer.onStopNote = ({ note, sustain }, client) => {
+    socketPlayer.onStopNote = (note, sustain, client) => {
         if (noteMap[note]) {
             noteMap[note].pressedColor = null;
         }

@@ -1,30 +1,8 @@
 import type { Player } from "soundfont-player";
 import { writable, get } from "svelte/store";
-import { getInstrument } from "./utils";
-import type { InstrumentName } from "./instrument_names";
-
-export interface ClientData {
-    color_hue: number;
-    socket_id: number;
-    instrument_name: InstrumentName;
-}
-
-export interface PlayNoteMessage {
-    note: string;
-    volume: number;
-    socket_id?: string;
-}
-
-export interface StopNoteMessage {
-    note: string;
-    sustain: boolean;
-    socket_id?: string;
-}
-
-export interface InstrumentChangeMessage {
-    instrument_name: InstrumentName;
-    socket_id?: string;
-}
+import { getInstrument } from "../utils";
+import type { InstrumentName } from "../instrument_names";
+import type { ClientData, WebsocketMessage } from "src/server_bindings";
 
 // Client represents a connected client and contains there own instrument and audio node map
 // to allow for multiple clients to play the same note at the same time
@@ -37,8 +15,8 @@ export class Client {
 
     constructor(clientData: ClientData) {
         this.colorHue = clientData.color_hue;
-        this.socketID = clientData.socket_id;
-        this.setInstrument(clientData.instrument_name);
+        this.socketID = clientData.id;
+        this.setInstrument(clientData.instrument_name as InstrumentName);
     }
 
     async setInstrument(instrumentName: InstrumentName) {
@@ -77,14 +55,14 @@ export class SocketPlayer {
     clientMap = new Map<number, Client>();
     localClient = new Client({
         color_hue: 220,
-        socket_id: 0,
+        id: 0,
         instrument_name: "acoustic_grand_piano",
     });
     socket: WebSocket | null = null;
 
     // Note play functions to be set by the piano (gets called when needs to be played)
-    onPlayNote?: (event: PlayNoteMessage, client: Client) => void;
-    onStopNote?: (event: StopNoteMessage, client: Client) => void;
+    onPlayNote?: (note: string, volume: number, client: Client) => void;
+    onStopNote?: (note: string, sustain: boolean, client: Client) => void;
 
     // Connects to a server using socketio and sets the listeners
     connect(roomName: string, maxRetries = 6) {
@@ -156,19 +134,21 @@ export class SocketPlayer {
         }
     }
 
-    handleMessage(message: any) {
+    handleMessage(message: WebsocketMessage) {
         switch (message.type) {
             case "Error":
                 this.connectError.set(message.error);
                 break;
             case "PlayNote":
-                this.onPlayNote!(message, this.getClient(message.socket_id)!);
+                this.onPlayNote!(message.note, message.volume, this.getClient(message.id!)!);
                 break;
             case "StopNote":
-                this.onStopNote!(message, this.getClient(message.socket_id)!);
+                this.onStopNote!(message.note, message.sustain, this.getClient(message.id!)!);
                 break;
             case "InstrumentChange":
-                this.getClient(message.socket_id)!.setInstrument(message.instrument_name);
+                this.getClient(message.id!)!.setInstrument(
+                    message.instrument_name as InstrumentName,
+                );
                 break;
             case "ClientConnect":
                 this.addClient(new Client(message));
@@ -180,19 +160,19 @@ export class SocketPlayer {
 
                 const client = message.created_client;
                 this.localClient.colorHue = client.color_hue;
-                this.localClient.socketID = message.created_client.socket_id;
+                this.localClient.socketID = message.created_client.id;
                 this.addClient(this.localClient);
                 break;
             }
             case "ClientDisconnect":
                 this.connectedColorHues.update((colorHues) => {
-                    colorHues.delete(message.socket_id);
+                    colorHues.delete(message.id);
                     return colorHues;
                 });
-                const client = this.getClient(message.socket_id);
+                const client = this.getClient(message.id);
                 if (client) {
                     this.cleanClient(client);
-                    this.clientMap.delete(message.socket_id);
+                    this.clientMap.delete(message.id);
                 }
                 break;
         }
@@ -204,15 +184,13 @@ export class SocketPlayer {
 
     // These functions send the note event to the server as well as calling the inner note play/stop functions with the local thread
     playNote(note: string, volume: number) {
-        const event: PlayNoteMessage = { note, volume };
-        this.onPlayNote!(event, this.localClient);
-        this.sendMessage("PlayNote", event);
+        this.onPlayNote!(note, volume, this.localClient);
+        this.sendMessage("PlayNote", { note, volume });
     }
 
     stopNote(note: string, sustain: boolean) {
-        const event: StopNoteMessage = { note, sustain };
-        this.onStopNote!(event, this.localClient);
-        this.sendMessage("StopNote", event);
+        this.onStopNote!(note, sustain, this.localClient);
+        this.sendMessage("StopNote", { note, sustain });
     }
 
     sendMessage(type: string, message: Record<string, any>) {
@@ -255,7 +233,7 @@ export class SocketPlayer {
     private cleanClient(client: Client) {
         // Stop all notes to prevent notes still held after disconnect
         for (const note of client.audioNodeMap.keys()) {
-            this.onStopNote!({ note, sustain: false }, client);
+            this.onStopNote!(note, false, client);
         }
     }
 }

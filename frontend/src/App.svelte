@@ -1,9 +1,9 @@
 <script lang="ts">
     import Piano from "./Piano.svelte";
-    import ControlPanel from "./ControlPanel.svelte";
-    import { MidiPlayer } from "./midi_player";
-    import { SocketPlayer } from "./socket_player";
-    import { PianoControlsData } from "./PianoControlsList.svelte";
+    import ControlPanel from "./control_panel/ControlPanel.svelte";
+    import { MidiPlayer } from "./control_panel/midi_player";
+    import { SocketPlayer } from "./control_panel/socket_player";
+    import { PianoControlsData } from "./control_panel/PianoControlsList.svelte";
 
     // Seperate functionallity to seperate classes for better modularity
     const pianoControlsData = new PianoControlsData();

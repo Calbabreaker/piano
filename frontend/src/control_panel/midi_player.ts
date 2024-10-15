@@ -1,8 +1,8 @@
 import { Midi, type Track } from "@tonejs/midi";
 import type { Note, NoteConstructorInterface } from "@tonejs/midi/dist/Note";
 import { writable, get } from "svelte/store";
-import { noteToMidi } from "./notes";
-import { binarySearch, swapRemove } from "./utils";
+import { noteToMidi } from "../notes";
+import { binarySearch, swapRemove } from "../utils";
 
 // Play and record midi files
 export class MidiPlayer {
@@ -82,9 +82,9 @@ export class MidiPlayer {
 
     // Stop playing or recording and resets
     stop() {
-        clearInterval(this.loopIntervalID);
+        clearInterval(this.loopIntervalID!);
         this.loopIntervalID = null;
-        this.playingHeldNotes.forEach((note) => this.onStopNote(note.name));
+        this.playingHeldNotes.forEach((note) => this.onStopNote!(note.name));
         this.playingHeldNotes = [];
         this.isPlaying.set(false);
 
@@ -136,7 +136,7 @@ export class MidiPlayer {
 
         if (noteObject) {
             noteObject.duration = get(this.currentTime) - noteObject.time;
-            this.recoringMidiData.tracks[get(this.selectedTrack)].addNote(noteObject);
+            this.recoringMidiData!.tracks[get(this.selectedTrack)].addNote(noteObject);
             this.recordingHeldNotes.delete(midi);
         }
     }
