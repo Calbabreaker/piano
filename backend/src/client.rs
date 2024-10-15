@@ -11,7 +11,7 @@ pub struct ClientData {
     pub id: u32,
     pub instrument_name: String,
     #[serde(skip)]
-    pub ws_sender: UnboundedSender<String>,
+    pub ws_sender: UnboundedSender<Vec<u8>>,
 }
 
 #[derive(Default, Clone, Debug)]
@@ -28,7 +28,7 @@ impl ClientList {
                 continue;
             }
 
-            client.ws_sender.send(serde_json::to_string(&message)?)?;
+            client.ws_sender.send(rmp_serde::to_vec_named(&message)?)?;
         }
 
         Ok(())

@@ -9,7 +9,7 @@ use std::{
 use futures_util::{stream::SplitStream, SinkExt, StreamExt};
 use rand::Rng;
 use tokio::sync::{mpsc::UnboundedSender, RwLock};
-use warp::filters::ws::WebSocket;
+use warp::{filters::ws::WebSocket, ws::Message};
 
 use crate::client::{ClientData, ClientList};
 
@@ -20,7 +20,7 @@ pub struct GlobalState {
 
 /// Represents a message sendable by the client and server
 /// Note: any message with skip_deserializing can't be sendable by the client
-#[derive(Clone, serde::Serialize, serde::Deserialize, ts_rs::TS)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, ts_rs::TS)]
 #[serde(tag = "type")]
 #[ts(export, export_to = "../../frontend/src/server_bindings.ts")]
 pub enum WebsocketMessage<'a> {
@@ -75,7 +75,7 @@ impl QueryParams {
 
 pub struct WebsocketConnection {
     ws_receiver: SplitStream<WebSocket>,
-    ws_sender: UnboundedSender<String>,
+    ws_sender: UnboundedSender<Vec<u8>>,
     params: QueryParams,
     state: Arc<RwLock<GlobalState>>,
     client_list: Option<ClientList>,
@@ -94,7 +94,7 @@ impl WebsocketConnection {
         // ws_tx can't be cloned so we need to make a mpsc channel to have multiple senders
         tokio::task::spawn(async move {
             while let Some(message) = rx.recv().await {
-                if ws_tx.send(warp::ws::Message::text(message)).await.is_err() {
+                if ws_tx.send(Message::binary(message)).await.is_err() {
                     break;
                 }
             }
@@ -151,10 +151,9 @@ impl WebsocketConnection {
 
         // Listen for websocket messages from client
         while let Some(ws_result) = self.ws_receiver.next().await {
-            if let Ok(string) = ws_result?.to_str() {
-                if let Err(error) = self.handle_websocket_message(string).await {
-                    log::error!("{error}");
-                }
+            let message = ws_result?;
+            if let Err(error) = self.handle_websocket_message(message.as_bytes()).await {
+                log::error!("Failed to handle websocket message: {error}");
             }
         }
 
@@ -178,10 +177,14 @@ impl WebsocketConnection {
         Ok(())
     }
 
-    async fn handle_websocket_message(&mut self, text: &str) -> anyhow::Result<()> {
+    async fn handle_websocket_message(&mut self, data: &[u8]) -> anyhow::Result<()> {
+        if data.is_empty() {
+            return Ok(());
+        }
+
         let client_list = self.client_list.as_ref().unwrap();
 
-        let mut message = serde_json::from_str(text)?;
+        let mut message = rmp_serde::from_slice(data)?;
         match message {
             WebsocketMessage::PlayNote { ref mut id, .. }
             | WebsocketMessage::StopNote { ref mut id, .. }
@@ -206,7 +209,7 @@ impl WebsocketConnection {
     }
 
     fn send_message(&self, message: &WebsocketMessage<'_>) -> anyhow::Result<()> {
-        self.ws_sender.send(serde_json::to_string(message)?)?;
+        self.ws_sender.send(rmp_serde::to_vec_named(message)?)?;
         Ok(())
     }
 }

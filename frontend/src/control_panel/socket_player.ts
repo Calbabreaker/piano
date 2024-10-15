@@ -3,6 +3,7 @@ import { writable, get } from "svelte/store";
 import { getInstrument } from "../utils";
 import type { InstrumentName } from "../instrument_names";
 import type { ClientData, WebsocketMessage } from "src/server_bindings";
+import * as msgpack from "@msgpack/msgpack";
 
 // Client represents a connected client and contains there own instrument and audio node map
 // to allow for multiple clients to play the same note at the same time
@@ -78,6 +79,7 @@ export class SocketPlayer {
         const backendPath = import.meta.env.VITE_BACKEND_PATH ?? "";
         const query = `room_name=${roomName}&instrument_name=${this.localClient.instrumentName}`;
         this.socket = new WebSocket(`${protocol}://${backendHost}/${backendPath}?${query}`);
+        this.socket.binaryType = "arraybuffer";
 
         this.socket.onopen = () => {
             console.log("Connected to websocket");
@@ -114,10 +116,13 @@ export class SocketPlayer {
             }, 1000);
         };
 
-        this.socket.onmessage = (event) => {
-            const message = JSON.parse(event.data);
-            if (message) {
-                this.handleMessage(message);
+        this.socket.onmessage = async (event) => {
+            if (event.data instanceof ArrayBuffer) {
+                const message = msgpack.decode(new Uint8Array(event.data));
+                console.log(message);
+                if (message) {
+                    this.handleMessage(message as WebsocketMessage);
+                }
             }
         };
 
@@ -200,7 +205,7 @@ export class SocketPlayer {
         }
 
         if (this.socket && get(this.connected)) {
-            this.socket.send(JSON.stringify({ type, ...message }));
+            this.socket.send(msgpack.encode({ type, ...message }));
         }
     }
 
