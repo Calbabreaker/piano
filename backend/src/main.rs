@@ -5,7 +5,10 @@ use std::{
 use tokio::sync::RwLock;
 use warp::Filter;
 
-use crate::websocket::{GlobalState, QueryParams, WebsocketConnection};
+use crate::{
+    client::GlobalState,
+    websocket::{QueryParams, WebsocketConnection},
+};
 
 mod client;
 mod websocket;

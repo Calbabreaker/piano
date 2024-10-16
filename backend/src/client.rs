@@ -1,8 +1,13 @@
-use std::sync::Arc;
+use std::{collections::HashMap, sync::Arc};
 
 use tokio::sync::{mpsc::UnboundedSender, RwLock, RwLockReadGuard, RwLockWriteGuard};
 
-use crate::websocket::WebsocketMessage;
+use crate::websocket::ServerMessage;
+
+#[derive(Default)]
+pub struct GlobalState {
+    pub rooms: HashMap<String, ClientList>,
+}
 
 #[derive(Clone, serde::Serialize, Debug, ts_rs::TS)]
 #[ts(export_to = "../../frontend/src/server_bindings.ts")]
@@ -20,10 +25,10 @@ pub struct ClientList(Arc<RwLock<Vec<ClientData>>>);
 impl ClientList {
     pub async fn send_to_all(
         &self,
-        message: &WebsocketMessage<'_>,
+        message: ServerMessage<'_>,
         self_id: u32,
     ) -> anyhow::Result<()> {
-        for client in self.0.read().await.iter() {
+        for client in self.get().await.iter() {
             if self_id == client.id {
                 continue;
             }

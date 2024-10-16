@@ -1,9 +1,7 @@
-use std::{
-    collections::HashMap,
-    sync::{
-        atomic::{AtomicU32, Ordering},
-        Arc,
-    },
+use crate::client::GlobalState;
+use std::sync::{
+    atomic::{AtomicU32, Ordering},
+    Arc,
 };
 
 use futures_util::{stream::SplitStream, SinkExt, StreamExt};
@@ -13,41 +11,35 @@ use warp::{filters::ws::WebSocket, ws::Message};
 
 use crate::client::{ClientData, ClientList};
 
-#[derive(Default)]
-pub struct GlobalState {
-    rooms: HashMap<String, ClientList>,
-}
-
-/// Represents a message sendable by the client and server
-/// Note: any message with skip_deserializing can't be sendable by the client
+/// Represents a message sendable by the client
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize, ts_rs::TS)]
 #[serde(tag = "type")]
 #[ts(export, export_to = "../../frontend/src/server_bindings.ts")]
-pub enum WebsocketMessage<'a> {
-    #[serde(skip_deserializing)]
-    Error { error: String },
-    #[serde(skip_deserializing)]
+pub enum ClientMessage {
+    Play { note: String, volume: f32 },
+    Stop { note: String, sustain: bool },
+    InstrumentChange { instrument_name: String },
+}
+
+/// Represents a message sendable by the server
+#[derive(Debug, Clone, serde::Serialize, ts_rs::TS)]
+#[serde(tag = "type")]
+#[ts(export, export_to = "../../frontend/src/server_bindings.ts")]
+pub enum ServerMessage<'a> {
+    Error {
+        error: String,
+    },
     ClientConnect(&'a ClientData),
-    #[serde(skip_deserializing)]
     ReceiveInfo {
         client_list: &'a Vec<ClientData>,
         created_client: &'a ClientData,
     },
-    #[serde(skip_deserializing)]
-    ClientDisconnect { id: u32 },
-    PlayNote {
-        note: String,
-        volume: f32,
-        id: Option<u32>,
+    ClientDisconnect {
+        id: u32,
     },
-    StopNote {
-        note: String,
-        sustain: bool,
-        id: Option<u32>,
-    },
-    InstrumentChange {
-        instrument_name: String,
-        id: Option<u32>,
+    Relay {
+        msg: ClientMessage,
+        id: u32,
     },
 }
 
@@ -112,7 +104,7 @@ impl WebsocketConnection {
 
     pub async fn handle_connection(&mut self) {
         if let Err(err) = self.on_connect().await {
-            let _ = self.send_message(&WebsocketMessage::Error {
+            let _ = self.send_message(ServerMessage::Error {
                 error: err.to_string(),
             });
             log::error!(
@@ -138,13 +130,13 @@ impl WebsocketConnection {
 
         // Send the list of clients in this room to only the connecting client so it knows the people here
         // And the client data as well
-        self.send_message(&WebsocketMessage::ReceiveInfo {
+        self.send_message(ServerMessage::ReceiveInfo {
             client_list: &*client_list.get().await,
             created_client: &client_data,
         })?;
 
         client_list
-            .send_to_all(&WebsocketMessage::ClientConnect(&client_data), self.id)
+            .send_to_all(ServerMessage::ClientConnect(&client_data), self.id)
             .await?;
         client_list.get_mut().await.push(client_data);
         self.client_list = Some(client_list);
@@ -152,9 +144,7 @@ impl WebsocketConnection {
         // Listen for websocket messages from client
         while let Some(ws_result) = self.ws_receiver.next().await {
             let message = ws_result?;
-            if let Err(error) = self.handle_websocket_message(message.as_bytes()).await {
-                log::error!("Failed to handle websocket message: {error}");
-            }
+            self.handle_websocket_message(message.as_bytes()).await?;
         }
 
         Ok(())
@@ -170,8 +160,8 @@ impl WebsocketConnection {
             let mut state = self.state.write().await;
             state.rooms.remove(&self.params.room_name);
         } else {
-            let message = WebsocketMessage::ClientDisconnect { id: self.id };
-            client_list.send_to_all(&message, self.id).await.ok();
+            let message = ServerMessage::ClientDisconnect { id: self.id };
+            client_list.send_to_all(message, self.id).await.ok();
         }
 
         Ok(())
@@ -184,32 +174,26 @@ impl WebsocketConnection {
 
         let client_list = self.client_list.as_ref().unwrap();
 
-        let mut message = rmp_serde::from_slice(data)?;
-        match message {
-            WebsocketMessage::PlayNote { ref mut id, .. }
-            | WebsocketMessage::StopNote { ref mut id, .. }
-            | WebsocketMessage::InstrumentChange { ref mut id, .. } => {
-                // Send the event to all the clients but with the id set by us
-                *id = Some(self.id);
-                client_list.send_to_all(&message, self.id).await?;
-            }
-            _ => (),
-        };
+        let msg = rmp_serde::from_slice::<ClientMessage>(data)?;
 
-        if let WebsocketMessage::InstrumentChange {
-            instrument_name, ..
-        } = message
+        if let ClientMessage::InstrumentChange {
+            ref instrument_name,
+            ..
+        } = msg
         {
             let mut client_list = client_list.get_mut().await;
             let client = client_list.iter_mut().find(|client| client.id == self.id);
-            client.unwrap().instrument_name = instrument_name;
+            client.unwrap().instrument_name = instrument_name.clone();
         }
+
+        let message = ServerMessage::Relay { msg, id: self.id };
+        client_list.send_to_all(message, self.id).await?;
 
         Ok(())
     }
 
-    fn send_message(&self, message: &WebsocketMessage<'_>) -> anyhow::Result<()> {
-        self.ws_sender.send(rmp_serde::to_vec_named(message)?)?;
+    fn send_message(&self, message: ServerMessage<'_>) -> anyhow::Result<()> {
+        self.ws_sender.send(rmp_serde::to_vec_named(&message)?)?;
         Ok(())
     }
 }

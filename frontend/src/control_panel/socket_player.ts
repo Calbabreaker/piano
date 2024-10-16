@@ -2,7 +2,7 @@ import type { Player } from "soundfont-player";
 import { writable, get } from "svelte/store";
 import { getInstrument } from "../utils";
 import type { InstrumentName } from "../instrument_names";
-import type { ClientData, WebsocketMessage } from "src/server_bindings";
+import type { ClientData, ClientMessage, ServerMessage } from "src/server_bindings";
 import * as msgpack from "@msgpack/msgpack";
 
 // Client represents a connected client and contains there own instrument and audio node map
@@ -119,9 +119,8 @@ export class SocketPlayer {
         this.socket.onmessage = async (event) => {
             if (event.data instanceof ArrayBuffer) {
                 const message = msgpack.decode(new Uint8Array(event.data));
-                console.log(message);
                 if (message) {
-                    this.handleMessage(message as WebsocketMessage);
+                    this.handleMessage(message as ServerMessage);
                 }
             }
         };
@@ -139,21 +138,24 @@ export class SocketPlayer {
         }
     }
 
-    handleMessage(message: WebsocketMessage) {
+    // These functions send the note event to the server as well as calling the inner note play/stop functions with the local client
+    playNote(note: string, volume: number) {
+        this.onPlayNote!(note, volume, this.localClient);
+        this.sendMessage({ type: "Play", note, volume });
+    }
+
+    stopNote(note: string, sustain: boolean) {
+        this.onStopNote!(note, sustain, this.localClient);
+        this.sendMessage({ type: "Stop", note, sustain });
+    }
+
+    private handleMessage(message: ServerMessage) {
         switch (message.type) {
             case "Error":
                 this.connectError.set(message.error);
                 break;
-            case "PlayNote":
-                this.onPlayNote!(message.note, message.volume, this.getClient(message.id!)!);
-                break;
-            case "StopNote":
-                this.onStopNote!(message.note, message.sustain, this.getClient(message.id!)!);
-                break;
-            case "InstrumentChange":
-                this.getClient(message.id!)!.setInstrument(
-                    message.instrument_name as InstrumentName,
-                );
+            case "Relay":
+                this.handleRelayMessage(message.msg, message.id);
                 break;
             case "ClientConnect":
                 this.addClient(new Client(message));
@@ -183,34 +185,37 @@ export class SocketPlayer {
         }
     }
 
-    getClient(socketID: number) {
+    private handleRelayMessage(message: ClientMessage, id: number) {
+        switch (message.type) {
+            case "Play":
+                this.onPlayNote!(message.note, message.volume, this.getClient(id)!);
+                break;
+            case "Stop":
+                this.onStopNote!(message.note, message.sustain, this.getClient(id)!);
+                break;
+            case "InstrumentChange":
+                this.getClient(id)!.setInstrument(message.instrument_name as InstrumentName);
+                break;
+        }
+    }
+
+    private getClient(socketID: number) {
         return this.clientMap.get(socketID);
     }
 
-    // These functions send the note event to the server as well as calling the inner note play/stop functions with the local thread
-    playNote(note: string, volume: number) {
-        this.onPlayNote!(note, volume, this.localClient);
-        this.sendMessage("PlayNote", { note, volume });
-    }
-
-    stopNote(note: string, sustain: boolean) {
-        this.onStopNote!(note, sustain, this.localClient);
-        this.sendMessage("StopNote", { note, sustain });
-    }
-
-    sendMessage(type: string, message: Record<string, any>) {
+    private sendMessage(message: ClientMessage) {
         // Only send when other people have connected
         if (this.clientMap.size == 1) {
             return;
         }
 
         if (this.socket && get(this.connected)) {
-            this.socket.send(msgpack.encode({ type, ...message }));
+            this.socket.send(msgpack.encode(message));
         }
     }
 
     async changeInstrument(instrumentName: InstrumentName) {
-        this.sendMessage("InstrumentChange", { instrument_name: instrumentName });
+        this.sendMessage({ type: "InstrumentChange", instrument_name: instrumentName });
 
         await this.localClient.setInstrument(instrumentName);
     }

@@ -3,7 +3,11 @@
 export type ClientData = { color_hue: number, id: number, instrument_name: string, };
 
 /**
- * Represents a message sendable by the client and server
- * Note: any message with skip_deserializing can't be sendable by the client
+ * Represents a message sendable by the client
  */
-export type WebsocketMessage = { "type": "Error", error: string, } | { "type": "ClientConnect" } & ClientData | { "type": "ReceiveInfo", client_list: Array<ClientData>, created_client: ClientData, } | { "type": "ClientDisconnect", id: number, } | { "type": "PlayNote", note: string, volume: number, id: number | null, } | { "type": "StopNote", note: string, sustain: boolean, id: number | null, } | { "type": "InstrumentChange", instrument_name: string, id: number | null, };
+export type ClientMessage = { "type": "Play", note: string, volume: number, } | { "type": "Stop", note: string, sustain: boolean, } | { "type": "InstrumentChange", instrument_name: string, };
+
+/**
+ * Represents a message sendable by the server
+ */
+export type ServerMessage = { "type": "Error", error: string, } | { "type": "ClientConnect" } & ClientData | { "type": "ReceiveInfo", client_list: Array<ClientData>, created_client: ClientData, } | { "type": "ClientDisconnect", id: number, } | { "type": "Relay", msg: ClientMessage, id: number, };
