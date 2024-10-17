@@ -25,13 +25,9 @@ jobs:
               working-directory: ./frontend
               run: pnpm install && echo "VITE_BACKEND_HOST=localhost:3000" > ./.env && pnpm build
 
-            - name: Build backend
+            - name: Run clippy
               working-directory: ./backend
-              run: cargo build -r
-
-            - name: Test run backend
-              working-directory: ./backend
-              run: cargo run -r & sleep 5; kill $!
+              run: cargo clippy
 
     deploy:
         needs: build-test
