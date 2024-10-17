@@ -37,13 +37,6 @@ jobs:
             - name: Checkout
               uses: actions/checkout@v2
 
-            - name: Install stable toolchain
-              uses: actions-rs/toolchain@v1
-              with:
-                  profile: minimal
-                  toolchain: stable
-                  override: true
-
             - name: Install pnpm
               run: npm install -g pnpm
 
@@ -63,7 +56,7 @@ jobs:
               with:
                   context: ./backend
                   push: true
-                  tags: ghcr.io/Calbabreaker/piano-backend
+                  tags: ghcr.io/calbabreaker/piano-backend
 
             - name: Push deploy-frontend
               uses: s0/git-publish-subdir-action@develop
