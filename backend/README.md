@@ -13,3 +13,7 @@ CORS_ORIGIN=https://example.com
 Run `cargo run -r` to build and run.
 
 Run `cargo test` to generate typescript types.
+
+## Docker
+
+Run `docker-compose up --build` to use the docker image.

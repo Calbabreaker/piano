@@ -11,6 +11,7 @@ jobs:
         steps:
             - name: Checkout
               uses: actions/checkout@v2
+
             - name: Install stable toolchain
               uses: actions-rs/toolchain@v1
               with:
@@ -19,12 +20,15 @@ jobs:
                   override: true
             - name: Install pnpm
               run: npm install -g pnpm
+
             - name: Build frontend
               working-directory: ./frontend
               run: pnpm install && echo "VITE_BACKEND_HOST=localhost:3000" > ./.env && pnpm build
+
             - name: Build backend
               working-directory: ./backend
               run: cargo build -r
+
             - name: Test run backend
               working-directory: ./backend
               run: cargo run -r & sleep 5; kill $!
@@ -36,17 +40,35 @@ jobs:
         steps:
             - name: Checkout
               uses: actions/checkout@v2
+
             - name: Install stable toolchain
               uses: actions-rs/toolchain@v1
               with:
                   profile: minimal
                   toolchain: stable
                   override: true
+
             - name: Install pnpm
               run: npm install -g pnpm
+
             - name: Build frontend with actual server env
               working-directory: ./frontend
               run: pnpm install && echo "VITE_BACKEND_HOST=piano-backend.onrender.com" > ./.env && pnpm build
+
+            - name: Log in to the Container registry
+              uses: docker/login-action@v3
+              with:
+                  registry: https://ghcr.io
+                  username: ${{ github.actor }}
+                  password: ${{ secrets.GITHUB_TOKEN }}
+
+            - name: Build and push Docker image
+              uses: docker/build-push-action@v6
+              with:
+                  context: ./backend
+                  push: true
+                  tags: ghcr.io/Calbabreaker/piano-backend
+
             - name: Push deploy-frontend
               uses: s0/git-publish-subdir-action@develop
               env:

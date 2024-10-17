@@ -119,6 +119,7 @@ impl WebsocketConnection {
     }
 
     async fn on_connect(&mut self) -> anyhow::Result<()> {
+        log::info!("Websocket client connected (id={})", self.id);
         let client_list = self.params.check(&self.state).await?;
 
         let client_data = ClientData {

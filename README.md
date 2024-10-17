@@ -15,8 +15,7 @@ The frontend folder will contain the piano frontend website. This can just be
 hosted somewhere statically able to serve files after building. The
 `deploy-frontend` branch will contain the built version of the `main` branch.
 
-The backend folder will contain the Rust backend server running warp. This needs
-to be hosted somewhere able to compile and run Rust (eg. Digitalocean droplet, heroku, etc.)
+The backend folder will contain the Rust backend server running warp.
 
 ## Developing
 

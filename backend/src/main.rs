@@ -32,8 +32,10 @@ async fn main() {
     let mut cors = warp::cors().allow_methods(vec!["GET", "POST"]);
     if let Ok(origin) = std::env::var("CORS_ORIGIN") {
         cors = cors.allow_origin(origin.as_str());
+        log::info!("Using cors origin: {origin}");
     } else {
         cors = cors.allow_any_origin();
+        log::info!("Using cors origin: *");
     }
 
     let websocket = warp::ws()
@@ -50,11 +52,12 @@ async fn main() {
         )
         .with(cors);
 
-    let port = std::env::var("PORT")
-        .ok()
-        .and_then(|p| p.parse().ok())
-        .unwrap_or(5000);
+    let port = get_port_from_env().unwrap_or(5000);
     let address = SocketAddr::from((Ipv4Addr::UNSPECIFIED, port));
     log::info!("Started websocket server on {address}");
     warp::serve(websocket).run(address).await;
+}
+
+fn get_port_from_env() -> Option<u16> {
+    std::env::var("PORT").ok()?.parse().ok()
 }
