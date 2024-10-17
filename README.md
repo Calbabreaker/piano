@@ -16,6 +16,7 @@ hosted somewhere statically able to serve files after building. The
 `deploy-frontend` branch will contain the built version of the `main` branch.
 
 The backend folder will contain the Rust backend server running warp.
+There exist a docker image at ghcr.io/calbabreaker/piano-backend.
 
 ## Developing
 

@@ -16,4 +16,6 @@ Run `cargo test` to generate typescript types.
 
 ## Docker
 
-Run `docker-compose up --build` to use the docker image.
+Run `docker-compose -f docker-compose-prod.yaml up` to use the prebuilt docker image.
+
+Or build it manually: `docker-compose up --build`.
