@@ -13,6 +13,10 @@ use crate::{
 mod client;
 mod websocket;
 
+pub mod schema {
+    include!(concat!(env!("OUT_DIR"), "/schema.rs"));
+}
+
 pub async fn start_server() {
     let state = Arc::new(RwLock::new(GlobalState::default()));
 

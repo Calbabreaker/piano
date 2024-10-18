@@ -9,13 +9,11 @@ pub struct GlobalState {
     pub rooms: HashMap<String, ClientList>,
 }
 
-#[derive(Clone, serde::Serialize, Debug, ts_rs::TS)]
-#[ts(export_to = "../../frontend/src/server_bindings.ts")]
+#[derive(Debug, Clone)]
 pub struct ClientData {
     pub color_hue: u16,
     pub id: u32,
     pub instrument_name: String,
-    #[serde(skip)]
     pub ws_sender: UnboundedSender<Vec<u8>>,
 }
 
@@ -33,7 +31,7 @@ impl ClientList {
                 continue;
             }
 
-            client.ws_sender.send(rmp_serde::to_vec_named(&message)?)?;
+            // client.ws_sender.send(rmp_serde::to_vec_named(&message)?)?;
         }
 
         Ok(())

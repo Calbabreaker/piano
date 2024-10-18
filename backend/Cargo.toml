@@ -13,5 +13,7 @@ log = "0.4"
 anyhow = "1.0.86"
 rand = "0.8.5"
 dotenvy = "0.15.7"
-ts-rs = "10"
-rmp-serde = "1"
+prost = "0.13"
+
+[build-dependencies]
+prost-build = "0.13"

@@ -5,6 +5,7 @@ use std::sync::{
 };
 
 use futures_util::{stream::SplitStream, SinkExt, StreamExt};
+use prost::Message as _;
 use rand::Rng;
 use tokio::sync::{mpsc::UnboundedSender, RwLock};
 use warp::{filters::ws::WebSocket, ws::Message};
@@ -12,19 +13,15 @@ use warp::{filters::ws::WebSocket, ws::Message};
 use crate::client::{ClientData, ClientList};
 
 /// Represents a message sendable by the client
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, ts_rs::TS)]
-#[serde(tag = "type")]
-#[ts(export, export_to = "../../frontend/src/server_bindings.ts")]
+#[derive(Debug, Clone)]
 pub enum ClientMessage {
-    Play { note: String, volume: f32 },
-    Stop { note: String, sustain: bool },
+    PlayNote { note: String, volume: f32 },
+    StopNote { note: String, sustain: bool },
     InstrumentChange { instrument_name: String },
 }
 
 /// Represents a message sendable by the server
-#[derive(Debug, Clone, serde::Serialize, ts_rs::TS)]
-#[serde(tag = "type")]
-#[ts(export, export_to = "../../frontend/src/server_bindings.ts")]
+#[derive(Debug, Clone)]
 pub enum ServerMessage<'a> {
     Error {
         error: String,
@@ -37,8 +34,8 @@ pub enum ServerMessage<'a> {
     ClientDisconnect {
         id: u32,
     },
-    Relay {
-        msg: ClientMessage,
+    RelayClientMessage {
+        message: ClientMessage,
         id: u32,
     },
 }
@@ -175,26 +172,26 @@ impl WebsocketConnection {
 
         let client_list = self.client_list.as_ref().unwrap();
 
-        let msg = rmp_serde::from_slice::<ClientMessage>(data)?;
+        // let msg = rmp_serde::from_slice::<ClientMessage>(data)?;
 
-        if let ClientMessage::InstrumentChange {
-            ref instrument_name,
-            ..
-        } = msg
-        {
-            let mut client_list = client_list.get_mut().await;
-            let client = client_list.iter_mut().find(|client| client.id == self.id);
-            client.unwrap().instrument_name = instrument_name.clone();
-        }
+        // if let ClientMessage::InstrumentChange {
+        //     ref instrument_name,
+        //     ..
+        // } = msg
+        // {
+        //     let mut client_list = client_list.get_mut().await;
+        //     let client = client_list.iter_mut().find(|client| client.id == self.id);
+        //     client.unwrap().instrument_name = instrument_name.clone();
+        // }
 
-        let message = ServerMessage::Relay { msg, id: self.id };
-        client_list.send_to_all(message, self.id).await?;
+        // let message = ServerMessage::RelayClientMessage { msg, id: self.id };
+        // client_list.send_to_all(message, self.id).await?;
 
         Ok(())
     }
 
     fn send_message(&self, message: ServerMessage<'_>) -> anyhow::Result<()> {
-        self.ws_sender.send(rmp_serde::to_vec_named(&message)?)?;
+        // self.ws_sender.send(rmp_serde::to_vec_named(&message)?)?;
         Ok(())
     }
 }

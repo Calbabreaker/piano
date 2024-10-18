@@ -1,0 +1,66 @@
+syntax = "proto3";
+
+package schema;
+
+// Message sendable by the client
+message ClientMessage {
+  oneof type {
+    PlayNote play_note = 1;
+    StopNote stop_note = 2;
+    InstrumentChange instrument_change = 3;
+  }
+}
+
+message PlayNote {
+  string note = 1;
+  float volume = 2;
+}
+
+message StopNote {
+  string note = 1;
+  bool sustain = 2;
+}
+
+message InstrumentChange {
+  string instrument_name = 1;
+}
+
+// Message sendable by the server
+message ServerMessage {
+  oneof type {
+    Error error = 1;
+    ClientConnect client_connect = 2;
+    ReceiveInfo receive_info = 3;
+    ClientDisconnect client_disconnect = 4;
+    RelayClientMessage relay = 5;
+  }
+}
+
+message Error {
+  string error = 1;
+}
+
+message ClientConnect {
+  ClientData client_data = 1;
+}
+
+message ReceiveInfo {
+  repeated ClientData client_list = 1;
+  ClientData created_client = 2;
+}
+
+message ClientDisconnect {
+  uint32 id = 1;
+}
+
+message RelayClientMessage {
+  ClientMessage message = 1;
+  uint32 id = 2;
+}
+
+// Data for the client
+message ClientData {
+  uint32 color_hue = 1;
+  uint32 id = 2;
+  string instrument_name = 3;
+}
