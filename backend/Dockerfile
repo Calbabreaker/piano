@@ -1,6 +1,5 @@
 FROM rust:1.81 AS builder
 
-# Create a 
 WORKDIR /server
 
 # Create an empty project to cache dependencies

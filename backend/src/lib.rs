@@ -46,6 +46,6 @@ pub async fn start_server() {
     warp::serve(websocket).run(address).await;
 }
 
-fn get_port_from_env() -> Option<u16> {
-    std::env::var("PORT").ok()?.parse().ok()
+fn get_port_from_env() -> anyhow::Result<u16> {
+    Ok(std::env::var("PORT")?.parse()?)
 }
