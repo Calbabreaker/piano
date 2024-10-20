@@ -41,11 +41,14 @@ impl ClientList {
 
     /// Removes a client by an id
     pub async fn remove(&self, id: u32) -> anyhow::Result<()> {
-        let mut client_list = self.get_mut().await;
-        let index = client_list.iter().position(|client| client.id == id);
-        let index = index.ok_or_else(|| anyhow::anyhow!("No client found"))?;
-        client_list.swap_remove(index);
+        let index = self.get_index(id).await?;
+        self.get_mut().await.swap_remove(index);
         Ok(())
+    }
+
+    pub async fn get_index(&self, id: u32) -> anyhow::Result<usize> {
+        let index = self.get().await.iter().position(|client| client.id == id);
+        index.ok_or_else(|| anyhow::anyhow!("No client found"))
     }
 
     pub async fn get(&self) -> RwLockReadGuard<'_, Vec<ClientData>> {

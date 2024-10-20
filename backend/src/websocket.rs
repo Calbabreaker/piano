@@ -70,7 +70,6 @@ pub struct WebsocketConnection {
     ws_sender: UnboundedSender<Vec<u8>>,
     params: QueryParams,
     state: Arc<RwLock<GlobalState>>,
-    client_list: Option<ClientList>,
     id: u32,
 }
 
@@ -93,7 +92,6 @@ impl WebsocketConnection {
         });
 
         Self {
-            client_list: None,
             params,
             ws_sender: tx,
             ws_receiver: ws_rx,
@@ -140,23 +138,27 @@ impl WebsocketConnection {
             .send_to_all(ServerMessage::ClientConnect(&client_data), self.id)
             .await?;
         client_list.get_mut().await.push(client_data);
-        self.client_list = Some(client_list);
 
         // Listen for websocket messages from client
         while let Some(ws_result) = self.ws_receiver.next().await {
             let message = ws_result?;
-            self.handle_websocket_message(message.as_bytes()).await?;
+            self.handle_websocket_message(message.as_bytes(), &client_list)
+                .await?;
         }
 
         Ok(())
     }
 
     async fn on_disconnect(&mut self) -> anyhow::Result<()> {
-        let client_list = self.client_list.as_ref().unwrap();
+        let client_list = match self.state.read().await.rooms.get(&self.params.room_name) {
+            Some(list) => list.clone(),
+            None => return Ok(()),
+        };
+
         // Find the client and remove it when disconnect
         client_list.remove(self.id).await?;
 
-        // If there are no clients left delete the room
+        // If there are no clients left, delete the room
         if client_list.get().await.len() == 0 {
             let mut state = self.state.write().await;
             state.rooms.remove(&self.params.room_name);
@@ -168,12 +170,14 @@ impl WebsocketConnection {
         Ok(())
     }
 
-    async fn handle_websocket_message(&mut self, data: &[u8]) -> anyhow::Result<()> {
+    async fn handle_websocket_message(
+        &mut self,
+        data: &[u8],
+        client_list: &ClientList,
+    ) -> anyhow::Result<()> {
         if data.is_empty() {
             return Ok(());
         }
-
-        let client_list = self.client_list.as_ref().unwrap();
 
         let msg = rmp_serde::from_slice::<ClientMessage>(data)?;
 
@@ -182,9 +186,9 @@ impl WebsocketConnection {
             ..
         } = msg
         {
+            let index = client_list.get_index(self.id).await?;
             let mut client_list = client_list.get_mut().await;
-            let client = client_list.iter_mut().find(|client| client.id == self.id);
-            client.unwrap().instrument_name = instrument_name.clone();
+            client_list[index].instrument_name = instrument_name.clone();
         }
 
         let message = ServerMessage::Relay { msg, id: self.id };
