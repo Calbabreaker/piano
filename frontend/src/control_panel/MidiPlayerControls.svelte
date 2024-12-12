@@ -58,10 +58,9 @@
         </button>
 
         {#if $tracks.length > 0}
-            <select bind:value={$shouldPlaySolo}>
-                <option value={false}>all tracks</option>
-                <option value={true}>single track</option>
-            </select>
+            <button title="Click to toggle" on:click={() => ($shouldPlaySolo = !$shouldPlaySolo)}>
+                {$shouldPlaySolo ? "single track" : "all tracks"}
+            </button>
         {/if}
     </div>
 

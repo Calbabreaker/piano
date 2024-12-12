@@ -11,5 +11,5 @@ async fn main() {
         log::warn!("Dotenv failed to initialize: {err}");
     }
 
-    piano_backend::start_server().await
+    piano_backend::start_server().await;
 }

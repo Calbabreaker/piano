@@ -197,7 +197,7 @@ impl WebsocketConnection {
         Ok(())
     }
 
-    fn send_message(&self, message: ServerMessage<'_>) -> anyhow::Result<()> {
+    fn send_message(&self, message: ServerMessage) -> anyhow::Result<()> {
         self.ws_sender.send(rmp_serde::to_vec_named(&message)?)?;
         Ok(())
     }
