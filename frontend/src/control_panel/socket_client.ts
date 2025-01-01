@@ -30,6 +30,7 @@ export class SocketClient {
         this.instrument =
             INSTRUMENT_CACHE[instrumentName] ??
             new Soundfont(audioContext, { instrument: instrumentName });
+        this.instrument.output.setVolume(127);
     }
 
     stopAudio(note: string) {
