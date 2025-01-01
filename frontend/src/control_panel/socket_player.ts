@@ -1,50 +1,8 @@
-import type { Player } from "soundfont-player";
 import { writable, get } from "svelte/store";
-import { getInstrument } from "../utils";
 import type { InstrumentName } from "../instrument_names";
-import type { ClientData, ClientMessage, ServerMessage } from "src/server_bindings";
+import type { ClientMessage, ServerMessage } from "src/server_bindings";
 import * as msgpack from "@msgpack/msgpack";
-
-// Client represents a connected client and contains there own instrument and audio node map
-// to allow for multiple clients to play the same note at the same time
-export class Client {
-    audioNodeMap = new Map<string, Player>();
-    instrument?: Player;
-    instrumentName!: InstrumentName;
-    colorHue: number;
-    socketID: number;
-
-    constructor(clientData: ClientData) {
-        this.colorHue = clientData.color_hue;
-        this.socketID = clientData.id;
-        this.setInstrument(clientData.instrument_name as InstrumentName);
-    }
-
-    async setInstrument(instrumentName: InstrumentName) {
-        this.instrumentName = instrumentName;
-        this.instrument = await getInstrument(instrumentName);
-    }
-
-    stopAudio(note: string) {
-        const node = this.audioNodeMap.get(note);
-        if (node) {
-            node.stop();
-            this.audioNodeMap.delete(note);
-        }
-    }
-
-    playAudio(note: string, volume: number) {
-        if (this.instrument) {
-            this.stopAudio(note);
-            this.audioNodeMap.set(
-                note,
-                this.instrument.play(note, undefined, {
-                    gain: volume,
-                }),
-            );
-        }
-    }
-}
+import { SocketClient } from "./socket_client";
 
 export class SocketPlayer {
     // These need to use svelte store so that the ui can update dynamically
@@ -53,8 +11,8 @@ export class SocketPlayer {
     connectedColorHues = writable<Map<number, number>>(new Map());
     connected = writable(false);
 
-    clientMap = new Map<number, Client>();
-    localClient = new Client({
+    clientMap = new Map<number, SocketClient>();
+    localClient = new SocketClient({
         color_hue: 220,
         id: 0,
         instrument_name: "acoustic_grand_piano",
@@ -62,8 +20,8 @@ export class SocketPlayer {
     socket: WebSocket | null = null;
 
     // Note play functions to be set by the piano (gets called when needs to be played)
-    onPlayNote?: (note: string, volume: number, client: Client) => void;
-    onStopNote?: (note: string, sustain: boolean, client: Client) => void;
+    onPlayNote?: (note: string, volume: number, client: SocketClient) => void;
+    onStopNote?: (note: string, sustain: boolean, client: SocketClient) => void;
 
     // Connects to a server using socketio and sets the listeners
     connect(roomName: string, maxRetries = 6) {
@@ -158,11 +116,11 @@ export class SocketPlayer {
                 this.handleRelayMessage(message.msg, message.id);
                 break;
             case "ClientConnect":
-                this.addClient(new Client(message));
+                this.addClient(new SocketClient(message));
                 break;
             case "ReceiveInfo": {
                 for (const client of message.client_list) {
-                    this.addClient(new Client(client));
+                    this.addClient(new SocketClient(client));
                 }
 
                 const client = message.created_client;
@@ -220,7 +178,7 @@ export class SocketPlayer {
         await this.localClient.setInstrument(instrumentName);
     }
 
-    private addClient(client: Client) {
+    private addClient(client: SocketClient) {
         this.connectedColorHues.update((colorHues) => {
             colorHues.set(client.socketID!, client.colorHue);
             return colorHues;
@@ -245,9 +203,9 @@ export class SocketPlayer {
         });
     }
 
-    private cleanClient(client: Client) {
+    private cleanClient(client: SocketClient) {
         // Stop all notes to prevent notes still held after disconnect
-        for (const note of client.audioNodeMap.keys()) {
+        for (const note of client.stopAudioMap.keys()) {
             this.onStopNote!(note, false, client);
         }
     }

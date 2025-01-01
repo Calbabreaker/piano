@@ -22,6 +22,6 @@
     "dependencies": {
         "@msgpack/msgpack": "3.0.0-beta2",
         "@tonejs/midi": "^2.0.28",
-        "soundfont-player": "^0.12.0"
+        "smplr": "^0.16.1"
     }
 }

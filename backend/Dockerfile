@@ -9,9 +9,8 @@ RUN cargo build --release
 RUN rm -rf ./src
 RUN rm ./target/release/piano-backend
 
-# Copy the source files
+# Copy and build the source files
 COPY ./src ./src
-
 RUN cargo build --release
 
 # Use a slim image for running

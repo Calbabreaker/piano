@@ -98,7 +98,7 @@
     // Stop all notes still playing when sustain turned off
     sustain.subscribe((sustain) => {
         if (!sustain) {
-            for (const note of socketPlayer.localClient.audioNodeMap.keys()) {
+            for (const note of socketPlayer.localClient.stopAudioMap.keys()) {
                 if (!pressedMap.get(note)) {
                     socketPlayer.stopNote(note, false);
                 }

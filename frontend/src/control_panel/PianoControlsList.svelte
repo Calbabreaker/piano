@@ -17,7 +17,6 @@
 </script>
 
 <script lang="ts">
-    import { snakeToTitleCase } from "../utils";
     import { type InstrumentName, instrumentNames } from "../instrument_names";
     import spinner from "../spinner.svg";
     import type { SocketPlayer } from "./socket_player";
@@ -31,6 +30,13 @@
     let { noteRange, sustain, noteShift, octaveShift, volume, labelType } = pianoControlsData;
 
     $: instrumentPromise = socketPlayer.changeInstrument(instrumentName);
+
+    // Converts "snake_case" to "Title Case"
+    function snakeToTitleCase(str: string): string {
+        const words = str.split("_");
+        const titleCasedWords = words.map((word) => word.charAt(0).toUpperCase() + word.slice(1));
+        return titleCasedWords.join(" ");
+    }
 
     function onKeyDown(event: KeyboardEvent) {
         if ((event.target as HTMLElement).tagName === "INPUT") {
@@ -119,7 +125,7 @@
         <span>Volume</span>
         <input type="range" min="0" max="10" step="0.1" bind:value={$volume} style="width: 8rem" />
         <!-- We use a number input instead of a setting the value directly to allow the user to go above the limit -->
-        <input type="number" bind:value={$volume} />
+        <span>{$volume}</span>
     </div>
 
     <div>

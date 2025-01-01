@@ -2,7 +2,6 @@ import { Midi, type Track } from "@tonejs/midi";
 import type { Note, NoteConstructorInterface } from "@tonejs/midi/dist/Note";
 import { writable, get } from "svelte/store";
 import { noteToMidi } from "../notes";
-import { binarySearch, swapRemove } from "../utils";
 
 // Play and record midi files
 export class MidiPlayer {
@@ -264,4 +263,30 @@ export class MidiPlayer {
             this.tracksIndexUpTo[trackI]++;
         }
     }
+}
+
+// Thanks https://stackoverflow.com/questions/22697936/binary-search-in-javascript
+function binarySearch<T>(array: T[], compareFunc: (elm: T) => number): number {
+    if (!array || array.length == 0) {
+        return 0;
+    }
+
+    let left = 0;
+    let right = array.length - 1;
+    while (left != right) {
+        const middle = Math.ceil((left + right) / 2);
+        let result = compareFunc(array[middle]);
+        if (result >= 0) {
+            right = middle - 1;
+        } else {
+            left = middle;
+        }
+    }
+
+    return right;
+}
+
+function swapRemove<T>(array: T[], i: number) {
+    array[i] = array[array.length - 1];
+    array.pop();
 }
