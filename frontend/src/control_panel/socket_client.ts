@@ -26,10 +26,14 @@ export class SocketClient {
     }
 
     async setInstrument(instrumentName: InstrumentName) {
+        if (!INSTRUMENT_CACHE[instrumentName]) {
+            INSTRUMENT_CACHE[instrumentName] = new Soundfont(audioContext, {
+                instrument: instrumentName,
+            });
+        }
+
         this.instrumentName = instrumentName;
-        this.instrument =
-            INSTRUMENT_CACHE[instrumentName] ??
-            new Soundfont(audioContext, { instrument: instrumentName });
+        this.instrument = INSTRUMENT_CACHE[instrumentName];
         this.instrument.output.setVolume(127);
         // Return the loading Promise
         return this.instrument.load;
