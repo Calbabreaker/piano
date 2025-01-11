@@ -31,6 +31,8 @@ export class SocketClient {
             INSTRUMENT_CACHE[instrumentName] ??
             new Soundfont(audioContext, { instrument: instrumentName });
         this.instrument.output.setVolume(127);
+        // Return the loading Promise
+        return this.instrument.load;
     }
 
     stopAudio(note: string) {

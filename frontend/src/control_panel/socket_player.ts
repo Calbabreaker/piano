@@ -107,6 +107,11 @@ export class SocketPlayer {
         this.sendMessage({ type: "Stop", note, sustain });
     }
 
+    async changeInstrument(instrumentName: InstrumentName) {
+        this.sendMessage({ type: "InstrumentChange", instrument_name: instrumentName });
+        await this.localClient.setInstrument(instrumentName);
+    }
+
     private handleMessage(message: ServerMessage) {
         switch (message.type) {
             case "Error":
@@ -170,12 +175,6 @@ export class SocketPlayer {
         if (this.socket && get(this.connected)) {
             this.socket.send(msgpack.encode(message));
         }
-    }
-
-    async changeInstrument(instrumentName: InstrumentName) {
-        this.sendMessage({ type: "InstrumentChange", instrument_name: instrumentName });
-
-        await this.localClient.setInstrument(instrumentName);
     }
 
     private addClient(client: SocketClient) {
