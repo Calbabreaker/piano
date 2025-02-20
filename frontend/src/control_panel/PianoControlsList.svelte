@@ -10,7 +10,7 @@
         octaveShift = writable(0);
         noteShift = writable(0);
         sustain = writable(false);
-        volume = writable(5);
+        volume = writable(10);
         noteRange = writable<string>("C2,C7");
         labelType = writable<LabelType>("keybinds");
     }
