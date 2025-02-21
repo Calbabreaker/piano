@@ -124,7 +124,6 @@
     <div>
         <span>Volume</span>
         <input type="range" min="0" max="10" step="0.1" bind:value={$volume} style="width: 8rem" />
-        <!-- We use a number input instead of a setting the value directly to allow the user to go above the limit -->
         <span>{$volume}</span>
     </div>
 

@@ -23,7 +23,7 @@
     let { noteRange, sustain, noteShift, octaveShift, volume, labelType } = pianoControlsData;
 
     // Remake the noteMap when the noteRange changed
-    $: [noteMap, whiteKeys] = generateNoteMapFromRange($noteRange);
+    $: [noteMap, numWhiteKeys] = generateNoteMapFromRange($noteRange);
 
     // Set play and stop note functions so that the midiPlayer can play notes on this piano
     export let midiPlayer: MidiPlayer;
@@ -127,7 +127,7 @@
     }
 
     // Recalc when whiteKeys (and thereby the noteRange) changes
-    $: recalcWidth(whiteKeys);
+    $: recalcWidth(numWhiteKeys);
 
     function onKeyDown(event: KeyboardEvent) {
         const note = keyBinds[event.code];
@@ -147,7 +147,6 @@
         }
     }
 
-    // We need to pass the control panel data stuff so that this functioin gets called when that changes
     function showLabel(
         note: string,
         labelType: LabelType,
@@ -189,7 +188,7 @@
     }
 
     onMount(() => {
-        recalcWidth(whiteKeys);
+        recalcWidth(numWhiteKeys);
 
         navigator.requestMIDIAccess().then((access) => {
             connectMidiDevices(access);
@@ -203,11 +202,11 @@
 </script>
 
 <svelte:window
-    on:resize={() => recalcWidth(whiteKeys)}
+    on:resize={() => recalcWidth(numWhiteKeys)}
     on:keyup={onKeyUp}
     on:keydown={onKeyDown}
     on:pointerdown={(e) => {
-        if (e.button === 0 && e.target?.tagName !== "SELECT") {
+        if (e.target?.tagName !== "SELECT") {
             mouseDown = true;
         }
     }}
@@ -215,7 +214,8 @@
 />
 <!-- Have a container for the piano in order to get the full width/height of the piano -->
 <div class="piano-container" bind:this={pianoContainer}>
-    <div class="piano" on:touchstart|preventDefault>
+    <!-- svelte-ignore a11y-no-static-element-interactions -->
+    <div class="piano" on:touchstart|preventDefault on:contextmenu|preventDefault>
         <!-- Loop through all the notes in noteMap and create a div for each note -->
         {#each Object.entries(noteMap) as [note, { isWhite, pressedColor }]}
             <div
