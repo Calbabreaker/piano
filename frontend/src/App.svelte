@@ -4,11 +4,16 @@
     import { MidiPlayer } from "./control_panel/midi_player";
     import { SocketPlayer } from "./control_panel/socket_player";
     import { PianoControlsData } from "./control_panel/PianoControlsList.svelte";
+    import { onDestroy } from "svelte";
 
     // Seperate functionallity to seperate classes for better modularity
     const pianoControlsData = new PianoControlsData();
     const midiPlayer = new MidiPlayer();
     const socketPlayer = new SocketPlayer();
+
+    onDestroy(() => {
+        midiPlayer.stop();
+    });
 </script>
 
 <main>

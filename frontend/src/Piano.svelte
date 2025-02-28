@@ -205,15 +205,18 @@
     on:resize={() => recalcWidth(numWhiteKeys)}
     on:keyup={onKeyUp}
     on:keydown={onKeyDown}
+/>
+<!-- Have a container for the piano in order to get the full width/height of the piano -->
+<div
+    class="piano-container"
+    bind:this={pianoContainer}
     on:pointerdown={(e) => {
         if (e.target?.tagName !== "SELECT") {
             mouseDown = true;
         }
     }}
     on:pointerup={() => (mouseDown = false)}
-/>
-<!-- Have a container for the piano in order to get the full width/height of the piano -->
-<div class="piano-container" bind:this={pianoContainer}>
+>
     <!-- svelte-ignore a11y-no-static-element-interactions -->
     <div class="piano" on:touchstart|preventDefault on:contextmenu|preventDefault>
         <!-- Loop through all the notes in noteMap and create a div for each note -->

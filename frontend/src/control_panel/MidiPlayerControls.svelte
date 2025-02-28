@@ -10,7 +10,7 @@
         currentTime,
         speed,
         totalTime,
-        selectedTrack,
+        selectedTrackI,
         tracks,
         shouldPlaySolo,
     } = midiPlayer;
@@ -24,6 +24,12 @@
             alert("Play any key to start recording. Recording WILL override the selected track.");
             localStorage.setItem("hasRecordedBefore", "true");
         }
+    }
+
+    function restart() {
+        midiPlayer.stop();
+        $currentTime = 0;
+        midiPlayer.startPlaying();
     }
 </script>
 
@@ -46,16 +52,13 @@
                 Play
             </button>
         {/if}
-        <button
-            on:click={() => {
-                $currentTime = 0;
-                midiPlayer.stop();
-                midiPlayer.lastStartFunc();
-            }}
-            disabled={$tracks.length == 0}
-        >
-            Restart
-        </button>
+        {#if $isRecording}
+            <button on:click={() => midiPlayer.stop(true)} disabled={$tracks.length == 0}>
+                Cancel
+            </button>
+        {:else}
+            <button on:click={restart} disabled={$tracks.length == 0}>Restart</button>
+        {/if}
 
         {#if $tracks.length > 0}
             <button title="Click to toggle" on:click={() => ($shouldPlaySolo = !$shouldPlaySolo)}>
@@ -71,7 +74,7 @@
         </button>
 
         {#if $tracks.length > 0}
-            <select bind:value={$selectedTrack} disabled={$isRecording}>
+            <select bind:value={$selectedTrackI} disabled={$isRecording}>
                 {#each $tracks as track, i}
                     <option value={i}>{track.name || `[Track ${i}]`}</option>
                 {/each}

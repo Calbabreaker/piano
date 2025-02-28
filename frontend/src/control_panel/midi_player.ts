@@ -1,4 +1,4 @@
-import { Midi, type Track } from "@tonejs/midi";
+import { Midi, Track } from "@tonejs/midi";
 import type { Note, NoteConstructorInterface } from "@tonejs/midi/dist/Note";
 import { writable, get } from "svelte/store";
 import { noteToMidi } from "../notes";
@@ -12,20 +12,16 @@ export class MidiPlayer {
     totalTime = writable(0); // time in seconds
     speed = writable(1);
     isRecording = writable(false);
-    selectedTrack = writable(0);
-    data = new Midi();
-    tracks = writable<Track[]>(this.data.tracks); // A seperate svelte store referencing this.midiData.tracks to notify and dynamically update when tracks changes
+    selectedTrackI = writable(0);
+    midiData = new Midi();
+    tracks = writable<Track[]>(this.midiData.tracks); // A seperate svelte store referencing this.midiData.tracks to notify and dynamically update when tracks changes
     shouldPlaySolo = writable(false);
-
-    // Reference to the startRecording or startPlaying function, whatever was called last
-    // This is used for when something needs to stop temporarly and start again
-    lastStartFunc = () => {};
 
     private tracksIndexUpTo: number[] = []; // Stores the note index that we are up to when playing for every track
     private loopIntervalID: number | null = null;
     private playingHeldNotes: Note[] = [];
     private recordingHeldNotes = new Map<number, NoteConstructorInterface>();
-    private recoringMidiData: Midi | null = null;
+    private backupMidiData: Midi | null = null;
     private midiLastStartTime = 0; // The midi time when startPlaying or startRecording was called for seeking back when stopping
 
     // Note play functions to be set by the piano (gets called when needs to be played)
@@ -35,13 +31,14 @@ export class MidiPlayer {
     constructor() {
         // Update the total time whenver the track information changes
         this.tracks.subscribe((tracks) => {
-            const totalTime = tracks.length == 0 ? 0 : this.data.duration;
+            const totalTime = tracks.length == 0 ? 0 : this.midiData.duration;
             this.totalTime.set(totalTime);
             this.currentTime.set(Math.min(totalTime, get(this.currentTime)));
         });
     }
 
     startPlaying() {
+        this.stop(); // Ensure nothing is playing to prevent weird bugs
         this.recalcPlayIndex();
 
         // Create the playing loop
@@ -51,52 +48,44 @@ export class MidiPlayer {
             // Stop playing once it reaches the end
             if (midiNow > get(this.totalTime)) {
                 this.stop();
-                this.lastStartFunc = () => {};
                 this.currentTime.set(0);
             }
         });
 
         this.isPlaying.set(true);
-        this.lastStartFunc = this.startPlaying.bind(this);
         this.midiLastStartTime = get(this.currentTime);
     }
 
     startRecording() {
-        if (this.data.tracks.length == 0) {
+        if (this.midiData.tracks.length == 0) {
             this.addTrack();
         }
 
-        // Reset the track the we're currently recording in since we're overwriting it
-        this.data.tracks[get(this.selectedTrack)].notes = [];
-
-        // We need to clone the midiData since we're also playing the tracks at the same time
-        // This way we don't interfere with the playing
-        this.recoringMidiData = this.data.clone();
+        this.backupMidiData = this.midiData.clone();
+        this.midiData.tracks[get(this.selectedTrackI)].notes = [];
 
         this.recalcPlayIndex();
         this.isRecording.set(true);
-        this.lastStartFunc = this.startRecording.bind(this);
         this.midiLastStartTime = get(this.currentTime);
     }
 
     // Stop playing or recording and resets
-    stop() {
+    stop(cancelRecording = false) {
         clearInterval(this.loopIntervalID!);
         this.loopIntervalID = null;
         this.playingHeldNotes.forEach((note) => this.onStopNote!(note.name));
         this.playingHeldNotes = [];
         this.isPlaying.set(false);
 
-        // Set the midi data copy
-        if (this.recoringMidiData) {
-            this.data = this.recoringMidiData;
-            this.recoringMidiData = null;
-            this.tracks.set(this.data.tracks);
+        // Copy midi data from recording
+        if (cancelRecording && this.backupMidiData) {
+            this.midiData = this.backupMidiData;
+            this.backupMidiData = null;
         }
 
-        // Reset recording data
         this.isRecording.set(false);
         this.recordingHeldNotes.clear();
+        this.currentTime.set(this.midiLastStartTime);
     }
 
     recordPlayNote(note: string, velocity: number) {
@@ -135,15 +124,15 @@ export class MidiPlayer {
 
         if (noteObject) {
             noteObject.duration = get(this.currentTime) - noteObject.time;
-            this.recoringMidiData!.tracks[get(this.selectedTrack)].addNote(noteObject);
+            this.midiData.tracks[get(this.selectedTrackI)].addNote(noteObject);
             this.recordingHeldNotes.delete(midi);
         }
     }
 
     addTrack() {
-        const track = this.data.addTrack();
-        this.selectedTrack.set(this.data.tracks.length - 1);
-        this.tracks.set(this.data.tracks);
+        const track = this.midiData.addTrack();
+        this.selectedTrackI.set(this.midiData.tracks.length - 1);
+        this.tracks.set(this.midiData.tracks);
 
         const trackName = prompt("Enter the track name: ");
         if (trackName) {
@@ -152,15 +141,15 @@ export class MidiPlayer {
     }
 
     deleteTrack() {
-        const selectedMidiTrack = get(this.selectedTrack);
-        this.data.tracks.splice(selectedMidiTrack, 1);
-        this.selectedTrack.set(Math.min(this.data.tracks.length - 1, selectedMidiTrack));
-        this.tracks.set(this.data.tracks);
+        const selectedTrackI = get(this.selectedTrackI);
+        this.midiData.tracks.splice(selectedTrackI, 1);
+        this.selectedTrackI.set(Math.min(this.midiData.tracks.length - 1, selectedTrackI));
+        this.tracks.set(this.midiData.tracks);
     }
 
     saveFile() {
         // Creates a url blob of the midi data and downloads the file automatically using a link tag
-        const blob = new Blob([this.data.toArray()], { type: "application/octet-stream" });
+        const blob = new Blob([this.midiData.toArray()], { type: "application/octet-stream" });
         const url = URL.createObjectURL(blob);
 
         const a = document.createElement("a");
@@ -181,9 +170,9 @@ export class MidiPlayer {
         // When the midiFile is changed read in the new midiFile data
         const reader = new FileReader();
         reader.onload = () => {
-            this.data = new Midi(reader.result as ArrayBuffer);
-            this.tracks.set(this.data.tracks);
-            this.selectedTrack.set(0);
+            this.midiData = new Midi(reader.result as ArrayBuffer);
+            this.tracks.set(this.midiData.tracks);
+            this.selectedTrackI.set(0);
         };
         reader.readAsArrayBuffer(file);
     }
@@ -191,14 +180,11 @@ export class MidiPlayer {
     // Stop playing/recording and jump back to when the user stared playing/recording
     stopAndReseek() {
         this.stop();
-        // Clear function reference
-        this.lastStartFunc = () => {};
-        this.currentTime.set(this.midiLastStartTime);
     }
 
     // Find where we are up to for all the tracks based on the current time
     private recalcPlayIndex() {
-        this.data.tracks.forEach((track, i) => {
+        this.midiData.tracks.forEach((track, i) => {
             const currentTime = get(this.currentTime);
 
             // We can binary search since the are all sorted
@@ -235,17 +221,21 @@ export class MidiPlayer {
         });
 
         if (get(this.shouldPlaySolo)) {
-            const i = get(this.selectedTrack);
+            const i = get(this.selectedTrackI);
             this.checkTracksPlayNotes(midiNow, i);
         } else {
-            for (let i = 0; i < this.data.tracks.length; i++) {
+            for (let i = 0; i < this.midiData.tracks.length; i++) {
                 this.checkTracksPlayNotes(midiNow, i);
             }
         }
     }
 
     private checkTracksPlayNotes(midiNow: number, trackI: number) {
-        const track = this.data.tracks[trackI];
+        if (get(this.isRecording) && get(this.selectedTrackI) == trackI) {
+            return;
+        }
+
+        const track = this.midiData.tracks[trackI];
         // Keep going through all notes that are behind the current time and play them to do simultaneous notes
         // and to catch up with any notes that were behind
         while (true) {
