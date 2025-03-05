@@ -38,6 +38,7 @@ export class MidiPlayer {
     }
 
     startPlaying() {
+        this.midiLastStartTime = get(this.currentTime);
         this.stop(); // Ensure nothing is playing to prevent weird bugs
         this.recalcPlayIndex();
 
@@ -53,7 +54,6 @@ export class MidiPlayer {
         });
 
         this.isPlaying.set(true);
-        this.midiLastStartTime = get(this.currentTime);
     }
 
     startRecording() {

@@ -31,6 +31,8 @@
         $currentTime = 0;
         midiPlayer.startPlaying();
     }
+
+    let playOnRelease = false;
 </script>
 
 <div>
@@ -114,8 +116,18 @@
             max={$totalTime}
             step="0.1"
             bind:value={$currentTime}
-            on:mousedown={() => midiPlayer.stop()}
-            on:mouseup={() => midiPlayer.lastStartFunc()}
+            on:mousedown={() => {
+                if ($isPlaying) {
+                    playOnRelease = true;
+                    midiPlayer.stop();
+                }
+            }}
+            on:mouseup={() => {
+                if (playOnRelease) {
+                    midiPlayer.startPlaying();
+                    playOnRelease = false;
+                }
+            }}
             style="width: 18rem"
             disabled={$isRecording}
         />

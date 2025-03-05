@@ -1,12 +1,12 @@
 use crate::client::GlobalState;
 use std::sync::{
-    atomic::{AtomicU32, Ordering},
     Arc,
+    atomic::{AtomicU32, Ordering},
 };
 
-use futures_util::{stream::SplitStream, SinkExt, StreamExt};
+use futures_util::{SinkExt, StreamExt, stream::SplitStream};
 use rand::Rng;
-use tokio::sync::{mpsc::UnboundedSender, RwLock};
+use tokio::sync::{RwLock, mpsc::UnboundedSender};
 use warp::{filters::ws::WebSocket, ws::Message};
 
 use crate::client::{ClientData, ClientList};
@@ -122,7 +122,7 @@ impl WebsocketConnection {
 
         let client_data = ClientData {
             id: self.id,
-            color_hue: rand::thread_rng().gen_range(0..360),
+            color_hue: rand::rng().random_range(0..360),
             instrument_name: self.params.instrument_name.clone(),
             ws_sender: self.ws_sender.clone(),
         };
@@ -159,7 +159,7 @@ impl WebsocketConnection {
         client_list.remove(self.id).await?;
 
         // If there are no clients left, delete the room
-        if client_list.get().await.len() == 0 {
+        if client_list.get().await.is_empty() {
             let mut state = self.state.write().await;
             state.rooms.remove(&self.params.room_name);
         } else {
