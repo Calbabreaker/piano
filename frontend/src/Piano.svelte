@@ -60,7 +60,7 @@
     }
 
     // These functions relay the playing to the socket player
-    function playNote(note: string, velocity = 0.5, allowAlreadyPressed = true) {
+    function playNote(note: string, velocity = 0.8, allowAlreadyPressed = true) {
         const realNote = getShiftedNote(note);
 
         // Stop note if note is being held
