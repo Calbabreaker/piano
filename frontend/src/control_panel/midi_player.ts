@@ -22,7 +22,7 @@ export class MidiPlayer {
     private playingHeldNotes: Note[] = [];
     private recordingHeldNotes = new Map<number, NoteConstructorInterface>();
     private backupMidiData: Midi | null = null;
-    private midiLastStartTime = 0; // The midi time when startPlaying or startRecording was called for seeking back when stopping
+    private lastStartTime = 0; // The midi time when startPlaying or startRecording was called for seeking back when stopping
 
     // Note play functions to be set by the piano (gets called when needs to be played)
     onPlayNote?: (note: string, velocity: number) => void;
@@ -38,7 +38,7 @@ export class MidiPlayer {
     }
 
     startPlaying() {
-        this.midiLastStartTime = get(this.currentTime);
+        this.lastStartTime = get(this.currentTime);
         this.stop(); // Ensure nothing is playing to prevent weird bugs
         this.recalcPlayIndex();
 
@@ -66,7 +66,7 @@ export class MidiPlayer {
 
         this.recalcPlayIndex();
         this.isRecording.set(true);
-        this.midiLastStartTime = get(this.currentTime);
+        this.lastStartTime = get(this.currentTime);
     }
 
     // Stop playing or recording and resets
@@ -85,7 +85,8 @@ export class MidiPlayer {
 
         this.isRecording.set(false);
         this.recordingHeldNotes.clear();
-        this.currentTime.set(this.midiLastStartTime);
+        this.currentTime.set(this.lastStartTime);
+        this.tracks.set(this.midiData.tracks);
     }
 
     recordPlayNote(note: string, velocity: number) {

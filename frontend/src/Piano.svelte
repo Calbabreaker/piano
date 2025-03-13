@@ -60,17 +60,10 @@
     }
 
     // These functions relay the playing to the socket player
-    function playNote(note: string, velocity = 0.8, allowAlreadyPressed = true) {
+    function playNote(note: string, velocity = 0.8) {
         const realNote = getShiftedNote(note);
-
-        // Stop note if note is being held
         if (pressedMap.has(realNote)) {
-            if (allowAlreadyPressed) {
-                stopNote(note);
-            } else {
-                // Or exit function if not allowed
-                return;
-            }
+            stopNote(note);
         }
 
         pressedMap.set(realNote, true);
@@ -82,8 +75,8 @@
         }
     }
 
-    function stopNote(note: string) {
-        const realNote = getShiftedNote(note);
+    function stopNote(note: string, shiftNote = true) {
+        const realNote = shiftNote ? getShiftedNote(note) : note;
         if (pressedMap.has(realNote)) {
             pressedMap.delete(realNote);
 
@@ -109,7 +102,7 @@
     // Unpress all held keys to prevent notes being continuely pressed when the octave changed
     function unpressHeld() {
         for (const note of pressedMap.keys()) {
-            socketPlayer.stopNote(note, $sustain);
+            stopNote(note, false);
         }
     }
 
@@ -136,7 +129,9 @@
         // If the keyBind exists and the user is not selected in a text box or something then play the note
         if (note && target.tagName !== "INPUT") {
             event.preventDefault();
-            playNote(note, undefined, false);
+            if (!pressedMap.has(getShiftedNote(note))) {
+                playNote(note);
+            }
         }
     }
 
