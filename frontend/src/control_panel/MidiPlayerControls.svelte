@@ -48,7 +48,7 @@
 
     <div>
         {#if midiInUse}
-            <button on:click={() => midiPlayer.stopAndReseek()}>Stop</button>
+            <button on:click={() => midiPlayer.stop()}>Stop</button>
         {:else}
             <button on:click={() => midiPlayer.startPlaying()} disabled={$tracks.length == 0}>
                 Play

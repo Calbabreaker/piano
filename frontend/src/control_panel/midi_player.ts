@@ -178,17 +178,12 @@ export class MidiPlayer {
         reader.readAsArrayBuffer(file);
     }
 
-    // Stop playing/recording and jump back to when the user stared playing/recording
-    stopAndReseek() {
-        this.stop();
-    }
-
     // Find where we are up to for all the tracks based on the current time
     private recalcPlayIndex() {
         this.midiData.tracks.forEach((track, i) => {
             const currentTime = get(this.currentTime);
 
-            // We can binary search since the are all sorted
+            // We can binary search since the timings are all in order
             this.tracksIndexUpTo[i] = binarySearch(track.notes, (note) => note.time - currentTime);
         });
     }
