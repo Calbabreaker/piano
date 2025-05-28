@@ -38,30 +38,6 @@
         return titleCasedWords.join(" ");
     }
 
-    function onKeyDown(event: KeyboardEvent) {
-        if ((event.target as HTMLElement).tagName === "INPUT") {
-            return;
-        }
-
-        switch (event.code) {
-            case "Space":
-                $sustain = true;
-                break;
-            case "ControlLeft":
-                $noteShift -= 1;
-                break;
-            case "AltLeft":
-                $noteShift += 1;
-                break;
-            case "AltRight":
-                $octaveShift -= 1;
-                break;
-            case "ControlRight":
-                $octaveShift += 1;
-                break;
-        }
-    }
-
     noteShift.subscribe(() => {
         // Move to the next octave if noteShift shifted 12 times
         if ($noteShift >= 12) {
@@ -86,10 +62,32 @@
         if (event.code === "Space") {
             $sustain = false;
         }
+
+        if ((event.target as HTMLElement).tagName === "INPUT") {
+            return;
+        }
+
+        switch (event.code) {
+            case "Space":
+                $sustain = true;
+                break;
+            case "ControlLeft":
+                $noteShift -= 1;
+                break;
+            case "AltLeft":
+                $noteShift += 1;
+                break;
+            case "AltRight":
+                $octaveShift -= 1;
+                break;
+            case "ControlRight":
+                $octaveShift += 1;
+                break;
+        }
     }
 </script>
 
-<svelte:window on:keydown={onKeyDown} on:keyup={onKeyUp} />
+<svelte:window on:keyup={onKeyUp} />
 <div class="option-list">
     <div title="Shortcut: space">
         <span>Sustain</span>

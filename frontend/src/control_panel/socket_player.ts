@@ -53,12 +53,12 @@ export class SocketPlayer {
             history.replaceState({}, "", location.pathname);
             document.title = "Play Piano!";
             this.clean();
+            this.connected.set(false);
 
             // Try reconnect if unexpectedly disconnected
-            if (get(this.connected)) {
+            if (!get(this.connectError)) {
                 console.log("Trying to reconnect");
                 this.connect(roomName);
-                this.connected.set(false);
             }
         };
 

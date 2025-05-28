@@ -127,13 +127,12 @@ impl WebsocketConnection {
             ws_sender: self.ws_sender.clone(),
         };
 
-        // Send the list of clients in this room to only the connecting client so it knows the people here
-        // And the client data as well
         self.send_message(ServerMessage::ReceiveInfo {
             client_list: &*client_list.get().await,
             created_client: &client_data,
         })?;
 
+        // Notify all connected clients in the room a new one has connected
         client_list
             .send_to_all(ServerMessage::ClientConnect(&client_data), self.id)
             .await?;
@@ -197,6 +196,7 @@ impl WebsocketConnection {
         Ok(())
     }
 
+    /// Sends a message to this connected client
     fn send_message(&self, message: ServerMessage) -> anyhow::Result<()> {
         self.ws_sender.send(rmp_serde::to_vec_named(&message)?)?;
         Ok(())

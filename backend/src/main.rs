@@ -7,9 +7,5 @@ async fn main() {
         .parse_env("RUST_LOG")
         .init();
 
-    if let Err(err) = dotenvy::dotenv() {
-        log::warn!("Dotenv failed to initialize: {err}");
-    }
-
     piano_backend::start_server().await;
 }

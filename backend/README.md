@@ -16,6 +16,8 @@ Run `cargo test` to generate typescript types.
 
 ## Docker
 
-Run `docker-compose -f docker-compose-prod.yaml up` to use the prebuilt docker image.
+Run `docker run -d --name piano-backend -p 5000:5000 --restart unless-stopped ghcr.io/calbabreaker/piano-backend` to use the prebuilt docker image.
 
-Or build it manually: `docker-compose up --build`.
+Or build it manually: `docker build . -t piano-backend`.
+
+Then run: `docker run -d --name piano-backend -p 5000:5000 --restart unless-stopped piano-backend`
