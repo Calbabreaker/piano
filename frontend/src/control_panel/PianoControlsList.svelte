@@ -68,9 +68,6 @@
         }
 
         switch (event.code) {
-            case "Space":
-                $sustain = true;
-                break;
             case "ControlLeft":
                 $noteShift -= 1;
                 break;
@@ -85,9 +82,15 @@
                 break;
         }
     }
+
+    function onKeyDown(event: KeyboardEvent) {
+        if (event.code === "Space") {
+            $sustain = true;
+        }
+    }
 </script>
 
-<svelte:window on:keyup={onKeyUp} />
+<svelte:window on:keyup={onKeyUp} on:keydown={onKeyDown} />
 <div class="option-list">
     <div title="Shortcut: space">
         <span>Sustain</span>
