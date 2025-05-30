@@ -63,7 +63,7 @@
             $sustain = false;
         }
 
-        if ((event.target as HTMLElement).tagName === "INPUT") {
+        if ((event.target as HTMLElement).tagName === "INPUT" || event.shiftKey) {
             return;
         }
 
