@@ -68,16 +68,16 @@
         }
 
         switch (event.code) {
-            case "ControlLeft":
+            case "ArrowLeft":
                 $noteShift -= 1;
                 break;
-            case "AltLeft":
+            case "ArrowRight":
                 $noteShift += 1;
                 break;
-            case "AltRight":
+            case "ArrowDown":
                 $octaveShift -= 1;
                 break;
-            case "ControlRight":
+            case "ArrowUp":
                 $octaveShift += 1;
                 break;
         }
@@ -111,12 +111,12 @@
             Tranpose
         </span>
         <input
-            title="Note shift (shortcut: left ctrl + left alt)"
+            title="Note shift (shortcut: LeftArrow & RightArrow)"
             type="number"
             bind:value={$noteShift}
         />
         <input
-            title="Octave shift (shortcut: right alt + right ctrl)"
+            title="Octave shift (shortcut: DownArrow & UpArrow)"
             type="number"
             bind:value={$octaveShift}
         />

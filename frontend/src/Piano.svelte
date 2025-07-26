@@ -128,12 +128,8 @@
 
         // If the keyBind exists and the user is not selected in a text box or something then play the note
         if (note && target.tagName !== "INPUT") {
+            event.preventDefault();
             if (!pressedMap.has(getShiftedNote(note))) {
-                // Only preventDefault when no modifers are held so certain keys won't cause issues
-                if (!event.shiftKey && !event.ctrlKey) {
-                    event.preventDefault();
-                }
-
                 playNote(note);
             }
         }
